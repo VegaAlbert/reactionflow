@@ -1,0 +1,40 @@
+FUENTES DE VÍDEO
+      ↓
+Descubrimiento / descarga
+      ↓
+Filtrado automático
+      ↓
+Edición vertical 9:16
+      ↓
+IA analiza el vídeo
+      ↓
+Guion / reacción del avatar
+      ↓
+Generación del avatar
+      ↓
+Composición final
+      ↓
+Control de calidad
+      ↓
+Cola de publicación
+      ↓
+TikTok
+      ↓
+Analytics
+      ↺
+	  
+
+
+MVP:
+Tú metes un vídeo en una carpeta.
+El sistema detecta duración, formato, audio, etc.
+Lo convierte automáticamente a 9:16.
+Una IA analiza el contenido.
+Genera una reacción breve.
+Genera/renderiza el avatar.
+Superpone avatar + vídeo.
+Produce el .mp4 final.
+
+
+cd /d E:\AutomaticVideos\scripts\youtube
+

@@ -1,0 +1,37 @@
+# Secretos y credenciales — NUNCA subir esto a git
+.env
+scripts/.env
+scripts/youtube/.env
+Credentials/
+
+# Entorno/pesos de IA descargados en local para probar EchoMimicV2 (~15GB,
+# no es código fuente — es un experimento con un venv de Python y modelos
+# descargados de Hugging Face)
+experiments/
+
+# Vídeos y audio generados o descargados por el pipeline (contenido, no
+# código — se regeneran ejecutando los scripts)
+scripts/youtube/raw_clips/
+scripts/youtube/processed_clips/
+scripts/youtube/audio/
+scripts/youtube/avatar_clips/
+scripts/youtube/final/
+test/
+videos/
+
+# Caché generada por la herramienta graphify (análisis del código, no código)
+graphify-out/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+*.egg-info/
+
+# Node (por si el sitio web en /web añade dependencias en el futuro)
+node_modules/
+
+# Sistema
+.DS_Store
+Thumbs.db

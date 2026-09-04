@@ -1,0 +1,26 @@
+Coloca aquí las imágenes del avatar (gato gris con gafas, fondo verde
+uniforme para chroma key) con estos nombres EXACTOS:
+
+    gato_boca_cerrada.png   <- la imagen base / reposo (la que ya tienes)
+    gato_boca_media.png
+    gato_boca_abierta.png
+    gato_ojos_cerrados.png
+    gato_sorpresa.png
+    gato_perfil.png          (no se usa todavía en la animación automática,
+                               se deja reservada para más adelante)
+
+Importante para que el "sprite-swap" no salte ni tiemble al cambiar de
+imagen:
+  - Las 6 imágenes deben tener EXACTAMENTE el mismo tamaño en píxeles.
+  - La cabeza/cuerpo del gato debe estar en la MISMA posición y a la MISMA
+    escala en todas ellas (solo debería cambiar la boca/ojos, no el
+    encuadre) — como una hoja de sprites de un personaje de videojuego.
+  - El verde de fondo debe ser el mismo tono exacto en las 6 imágenes
+    (ideal: verde puro tipo 0x00FF00) y sin sombras ni degradados sobre
+    él, para que el chroma key las limpie a todas por igual.
+
+En cuanto estén aquí con esos nombres, ejecuta:
+
+    python compose_avatar.py
+
+desde la carpeta scripts/youtube.
