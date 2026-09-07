@@ -30,6 +30,8 @@ from pathlib import Path
 if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+if sys.stdin.encoding and sys.stdin.encoding.lower() != "utf-8":
+    sys.stdin.reconfigure(encoding="utf-8")
 
 # ----------------------------------------------------------------------------
 # CONFIGURACIÓN
@@ -53,6 +55,24 @@ MIN_INPUT_HEIGHT = 360
 VIDEO_EXTENSIONS = {".mp4", ".mkv", ".webm", ".mov"}
 
 # ----------------------------------------------------------------------------
+
+
+def ask_yes_no(prompt: str, default: bool = False) -> bool:
+    """Pregunta sí/no. Vacío (Enter) usa el valor por defecto; cualquier otra
+    respuesta que no sea un sí/no reconocido vuelve a preguntar, en vez de
+    asumir silenciosamente lo que el usuario quiso decir."""
+    yes_answers = ("s", "si", "sí", "y", "yes")
+    no_answers = ("n", "no")
+    while True:
+        ans = input(prompt).strip().lower()
+        if not ans:
+            return default
+        if ans in yes_answers:
+            return True
+        if ans in no_answers:
+            return False
+        print(f"  No te he entendido (\"{ans}\"). Responde s o n"
+              f"{' (Enter = sí)' if default else ' (Enter = no)'}.")
 
 
 def load_log() -> dict:
@@ -107,7 +127,34 @@ def is_valid_input(info: dict) -> bool:
     return info["width"] >= MIN_INPUT_WIDTH and info["height"] >= MIN_INPUT_HEIGHT
 
 
-def convert_to_vertical(input_path: Path, output_path: Path) -> bool:
+def prompt_audio_and_trim(duration: float) -> tuple:
+    """Pregunta por cada vídeo si hay que quitarle el audio original y/o
+    recortarlo a una duración concreta. Devuelve (remove_audio, trim_seconds),
+    con trim_seconds a None si no se recorta."""
+    remove_audio = ask_yes_no("  ¿Quitar el audio original del vídeo? [s/N]: ")
+    trim_choice = ask_yes_no("  ¿Recortar el vídeo? [s/N]: ")
+    trim_seconds = None
+    if trim_choice:
+        while True:
+            secs_str = input(
+                f"  ¿Cuántos segundos quieres que dure? (el vídeo dura {duration:.1f}s): "
+            ).strip()
+            try:
+                secs = float(secs_str.replace(",", "."))
+            except ValueError:
+                print("  Escribe un número.")
+                continue
+            if secs <= 0:
+                print("  Tiene que ser mayor que 0.")
+                continue
+            trim_seconds = min(secs, duration)
+            break
+
+    return remove_audio, trim_seconds
+
+
+def convert_to_vertical(input_path: Path, output_path: Path,
+                         remove_audio: bool = False, trim_seconds: float | None = None) -> bool:
     """Convierte un vídeo a 9:16 con fondo difuminado usando ffmpeg. True si tuvo éxito."""
     filter_complex = (
         f"[0:v]scale={OUTPUT_WIDTH}:{OUTPUT_HEIGHT}:force_original_aspect_ratio=increase,"
@@ -121,11 +168,18 @@ def convert_to_vertical(input_path: Path, output_path: Path) -> bool:
         "-i", str(input_path),
         "-filter_complex", filter_complex,
         "-map", "[v]",
-        "-map", "0:a?",  # incluye audio si existe, sin fallar si no hay
-        "-c:v", "libx264", "-preset", "medium", "-crf", "20",
-        "-c:a", "aac", "-b:a", "128k",
-        str(output_path),
     ]
+    if remove_audio:
+        cmd += ["-an"]
+    else:
+        cmd += ["-map", "0:a?"]  # incluye audio si existe, sin fallar si no hay
+
+    cmd += ["-c:v", "libx264", "-preset", "medium", "-crf", "20"]
+    if not remove_audio:
+        cmd += ["-c:a", "aac", "-b:a", "128k"]
+    if trim_seconds is not None:
+        cmd += ["-t", f"{trim_seconds:.3f}"]
+    cmd += [str(output_path)]
 
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
@@ -187,8 +241,10 @@ def main():
             processed_count += 1
             continue
 
+        remove_audio, trim_seconds = prompt_audio_and_trim(info["duration"])
+
         print("  Convirtiendo a 9:16 con fondo difuminado...")
-        success = convert_to_vertical(filepath, output_path)
+        success = convert_to_vertical(filepath, output_path, remove_audio, trim_seconds)
 
         if success:
             print(f"  Guardado en {output_path}")
