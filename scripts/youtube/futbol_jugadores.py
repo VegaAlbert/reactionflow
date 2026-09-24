@@ -22,6 +22,7 @@ Estructura (dentro de assets/futbol):
 Uso (desde la carpeta scripts/youtube):
     python futbol_jugadores.py elipse
     python futbol_jugadores.py estado   --equipo barca
+    python futbol_jugadores.py descargar --equipo barca [--jugador pedri]
     python futbol_jugadores.py preparar --equipo barca [--jugador pedri] [--forzar]
     python futbol_jugadores.py nota     --equipo barca --jugador pedri --nota 7.5
 
@@ -205,8 +206,15 @@ def preparar_jugador(equipo: str, jugador: dict, config: dict, elipse: Image.Ima
         return False
 
     print(f" - {jugador['nombre']} ({original.name})")
-    recorte = quitar_fondo(Image.open(original))
-    jugador_png = encuadrar(recorte, config, jugador.get("ajuste", {}))
+    img = Image.open(original)
+    lienzo = (config["lienzo"]["ancho"], config["lienzo"]["alto"])
+    if img.size == lienzo and img.mode == "RGBA" and "ajuste" not in jugador:
+        # PNG oficial de la ficha del club (670x790, ya recortado): viene con
+        # el mismo encuadre que la foto de ejemplo, se usa tal cual.
+        jugador_png = img
+    else:
+        recorte = quitar_fondo(img)
+        jugador_png = encuadrar(recorte, config, jugador.get("ajuste", {}))
 
     carpeta = FUTBOL_DIR / equipo
     (carpeta / "sin_elipse").mkdir(exist_ok=True)
@@ -274,6 +282,35 @@ def cmd_estado(args, config):
         print(f"  {j['dorsal']:>2} {j['nombre']:<20} {marca}   (originales/{j['id']}.*)")
 
 
+def cmd_descargar(args, config):
+    """Baja el PNG oficial recortado (670x790) de la ficha de cada jugador en
+    la web del club (campo "ficha" de plantilla.json) a originales/<id>.png."""
+    import re
+    import urllib.request
+
+    def get(url: str) -> bytes:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return r.read()
+
+    plantilla = load_plantilla(args.equipo)
+    ancho, alto = config["lienzo"]["ancho"], config["lienzo"]["alto"]
+    carpeta = FUTBOL_DIR / args.equipo / "originales"
+    for j in plantilla["jugadores"]:
+        if args.jugador and j["id"] != args.jugador:
+            continue
+        if not j.get("ficha"):
+            print(f" - {j['nombre']}: sin enlace de ficha en plantilla.json")
+            continue
+        ficha = get(j["ficha"]).decode("utf-8", errors="replace")
+        m = re.search(r'class="player-hero__img" src="([^"?]+)', ficha)
+        if not m:
+            print(f" - {j['nombre']}: no encuentro la foto en {j['ficha']}")
+            continue
+        (carpeta / f"{j['id']}.png").write_bytes(get(f"{m[1]}?width={ancho}&height={alto}"))
+        print(f" - {j['nombre']}: {m[1].rsplit('/', 1)[1]}")
+
+
 def cmd_preparar(args, config):
     plantilla = load_plantilla(args.equipo)
     elipse = cargar_elipse(config)
@@ -310,6 +347,10 @@ def main():
     p = sub.add_parser("estado", help="Qué jugadores tienen ya su foto")
     p.add_argument("--equipo", required=True)
 
+    p = sub.add_parser("descargar", help="Baja las fotos oficiales de la web del club")
+    p.add_argument("--equipo", required=True)
+    p.add_argument("--jugador", help="Solo este id")
+
     p = sub.add_parser("preparar", help="Quita el fondo, encuadra y pone la elipse")
     p.add_argument("--equipo", required=True)
     p.add_argument("--jugador", help="Solo este id (por defecto, todos los pendientes)")
@@ -322,7 +363,7 @@ def main():
 
     args = parser.parse_args()
     config = load_config()
-    {"elipse": cmd_elipse, "estado": cmd_estado, "preparar": cmd_preparar, "nota": cmd_nota}[
+    {"elipse": cmd_elipse, "estado": cmd_estado, "descargar": cmd_descargar, "preparar": cmd_preparar, "nota": cmd_nota}[
         args.comando
     ](args, config)
 

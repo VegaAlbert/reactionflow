@@ -35,3 +35,6 @@ node_modules/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Imagenes con nota generadas para cada video (se regeneran con futbol_jugadores.py nota)
+scripts/youtube/assets/futbol/*/notas/

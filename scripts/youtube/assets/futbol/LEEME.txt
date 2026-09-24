@@ -1,7 +1,12 @@
 FOTOS DE JUGADORES PARA LOS VIDEOS DE NOTAS DEL GATO
 ====================================================
 
-1) Pon una foto de cada jugador en <equipo>/originales/ con el nombre
+0) Lo normal: bajar las fotos oficiales de la web del club (PNG ya
+   recortados con el mismo encuadre que la foto de ejemplo):
+     python futbol_jugadores.py descargar --equipo barca
+   Cada jugador tiene en plantilla.json el enlace "ficha" a su pagina.
+
+1) Si un jugador no tiene foto oficial, pon una foto de cada jugador en <equipo>/originales/ con el nombre
    del "id" de plantilla.json (ej: barca/originales/pedri.jpg).
    - Vale jpg, png o webp, con fondo o sin fondo.
    - De frente y que se vea desde la cabeza hasta la cintura/cadera
