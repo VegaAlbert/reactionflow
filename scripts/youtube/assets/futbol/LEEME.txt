@@ -25,7 +25,7 @@ FOTOS DE JUGADORES PARA LOS VIDEOS DE NOTAS DEL GATO
 La elipse (elipse.png) y su posicion estan en config.json y son las
 mismas para todos los jugadores. La cara de cada jugador se detecta y se
 escala/coloca siempre igual que en la foto de ejemplo de Pau Cubarsi.
-fondos/  -> fondo del campo para la alineacion
+fondos/  -> campo.png, el fondo de las alineaciones (1080x1920)
 escudos/ -> escudos de los clubes: barca.png, madrid.png (1000 px de alto,
            fondo transparente) y el .svg original para exportar a
            cualquier tamano.

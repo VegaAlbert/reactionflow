@@ -8,8 +8,9 @@ Si un jugador tiene nota, se escribe dentro de su elipse; si no, la elipse
 sale vacía (así el vídeo puede ir mostrando la nota jugador a jugador).
 
 Fondo: la primera imagen que haya en assets/futbol/fondos/ (png, jpg, webp
-o avif), recortada para llenar 1080x1920. Si la carpeta está vacía se
-dibuja un campo verde provisional.
+o avif), recortada para llenar 1080x1920. Por defecto es fondos/campo.png,
+el campo verde que dibuja este script (python futbol_alineacion.py --campo
+lo regenera). Si la carpeta está vacía se dibuja al vuelo.
 
 Ejemplo de alineacion.json:
     {
@@ -60,11 +61,10 @@ def cargar_fondo() -> Image.Image:
     if fondos:
         img = Image.open(fondos[0]).convert("RGBA")
         return ImageOps.fit(img, (ANCHO, ALTO), Image.LANCZOS)
-    print("⚠ No hay imagen en assets/futbol/fondos/: uso un campo provisional.")
-    return campo_provisional()
+    return dibujar_campo()
 
 
-def campo_provisional() -> Image.Image:
+def dibujar_campo() -> Image.Image:
     img = Image.new("RGBA", (ANCHO, ALTO), (46, 160, 67, 255))
     d = ImageDraw.Draw(img)
     for i in range(0, ALTO, 160):
@@ -148,10 +148,19 @@ def componer(datos: dict, con_notas: bool = True) -> Image.Image:
 
 def main():
     parser = argparse.ArgumentParser(description="Alineación sobre el fondo del campo.")
-    parser.add_argument("json", type=Path, help="Archivo con equipo, formación, once y notas")
+    parser.add_argument("json", type=Path, nargs="?", help="Archivo con equipo, formación, once y notas")
+    parser.add_argument("--campo", action="store_true", help="(Re)genera fondos/campo.png y sale")
     parser.add_argument("--salida", type=Path, help="PNG de salida (por defecto, junto al JSON)")
     parser.add_argument("--sin-notas", action="store_true", help="Elipses vacías aunque haya notas")
     args = parser.parse_args()
+
+    if args.campo:
+        FONDOS_DIR.mkdir(parents=True, exist_ok=True)
+        dibujar_campo().convert("RGB").save(FONDOS_DIR / "campo.png")
+        print(f"Fondo guardado en {FONDOS_DIR / 'campo.png'}")
+        return
+    if args.json is None:
+        parser.error("falta el archivo JSON de la alineación")
 
     datos = json.loads(args.json.read_text(encoding="utf-8"))
     salida = args.salida or args.json.with_suffix(".png")
