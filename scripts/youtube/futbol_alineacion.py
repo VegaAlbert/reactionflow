@@ -35,7 +35,7 @@ import json
 import sys
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageOps
+from PIL import Image, ImageDraw, ImageFilter, ImageOps
 
 import futbol_jugadores as fj
 
@@ -107,7 +107,43 @@ def etiqueta_nombre(nombre: str, ancho_max: int) -> Image.Image:
     return img
 
 
-def componer(datos: dict, con_notas: bool = True) -> Image.Image:
+def resplandor(foto: Image.Image, color=(255, 205, 40)) -> Image.Image:
+    """Halo del color dado alrededor de la silueta del jugador, para resaltar
+    al que el gato está comentando."""
+    # Solo la silueta: las fotos oficiales traen una sombra casi transparente
+    # en todo el rectángulo que, dilatada, se vería como un recuadro.
+    silueta = foto.getchannel("A").point(lambda a: 255 if a > 160 else 0)
+    alfa = silueta.filter(ImageFilter.MaxFilter(15)).filter(ImageFilter.GaussianBlur(14))
+    halo = Image.new("RGBA", foto.size, color + (0,))
+    halo.putalpha(alfa.point(lambda a: min(255, a * 2)))
+    return halo
+
+
+def pintar_marcador(lienzo: Image.Image, marcador: dict, subtitulo: str | None) -> None:
+    """Marcador arriba al centro: escudo local, resultado, escudo visitante."""
+    panel_w, panel_h, top = 620, 190 if subtitulo else 160, 30
+    x0 = (ANCHO - panel_w) // 2
+    capa = Image.new("RGBA", lienzo.size, (0, 0, 0, 0))
+    ImageDraw.Draw(capa).rounded_rectangle(
+        [x0, top, x0 + panel_w, top + panel_h], radius=28, fill=(12, 40, 22, 215)
+    )
+    lienzo.alpha_composite(capa)
+    for equipo, cx in ((marcador["local"], x0 + 105), (marcador["visitante"], x0 + panel_w - 105)):
+        ruta = ESCUDOS_DIR / f"{equipo}.png"
+        if ruta.exists():
+            escudo = Image.open(ruta).convert("RGBA")
+            escudo.thumbnail((125, 125), Image.LANCZOS)
+            lienzo.alpha_composite(escudo, (cx - escudo.width // 2, top + 18 + (125 - escudo.height) // 2))
+    d = ImageDraw.Draw(lienzo)
+    goles = marcador["goles"]
+    d.text((ANCHO / 2, top + 80), f"{goles[0]} - {goles[1]}", font=fj.cargar_fuente(92), fill="white", anchor="mm")
+    if subtitulo:
+        d.text((ANCHO / 2, top + 162), subtitulo, font=fj.cargar_fuente(28), fill=(210, 235, 215), anchor="mm")
+
+
+def componer(
+    datos: dict, con_notas: bool = True, destacado: str | None = None
+) -> Image.Image:
     config = fj.load_config()
     equipo = datos["equipo"]
     plantilla = fj.load_plantilla(equipo)
@@ -134,10 +170,15 @@ def componer(datos: dict, con_notas: bool = True) -> Image.Image:
             foto = foto.resize((w, h), Image.LANCZOS)
             x = round(MARGEN_LATERAL + hueco * (k + 1) + w * k)
             y = cy - h // 2
+            if jugador_id == destacado:
+                lienzo.alpha_composite(resplandor(foto), (x, y))
             lienzo.alpha_composite(foto, (x, y))
             nombre = etiqueta_nombre(j["nombre"], w)
             lienzo.alpha_composite(nombre, (x + (w - nombre.width) // 2, y + h + 4))
 
+    if datos.get("marcador"):
+        pintar_marcador(lienzo, datos["marcador"], datos.get("competicion"))
+        return lienzo
     escudo_path = ESCUDOS_DIR / f"{equipo}.png"
     if escudo_path.exists():
         escudo = Image.open(escudo_path).convert("RGBA")
