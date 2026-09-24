@@ -1,0 +1,195 @@
+{
+  "equipo": "Real Madrid",
+  "temporada": "2026/27",
+  "fuente": "Web oficial: https://www.realmadrid.com/es-ES/futbol/primer-equipo/plantilla (septiembre 2026)",
+  "encuadre": {
+    "_comentario": "Fotos oficiales 1500x2000 de realmadrid.com: misma escala para todas (mediana de caras detectadas).",
+    "escala": 0.397,
+    "dx": 0,
+    "dy": -9
+  },
+  "jugadores": [
+    {
+      "id": "courtois",
+      "nombre": "Thibaut Courtois",
+      "dorsal": 1,
+      "posicion": "POR",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/thibaut-courtois/assets/COURTOIS_CARITA_1500X2000.png"
+    },
+    {
+      "id": "asencio",
+      "nombre": "Raúl Asencio",
+      "dorsal": 2,
+      "posicion": "DEF",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/raul-asencio/assets/ASENCIO_CARITA_1500X2000.png"
+    },
+    {
+      "id": "militao",
+      "nombre": "Éder Militão",
+      "dorsal": 3,
+      "posicion": "DEF",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/eder-gabriel-militao/assets/MILITAO_CARITA_1500X2000.png"
+    },
+    {
+      "id": "huijsen",
+      "nombre": "Dean Huijsen",
+      "dorsal": 4,
+      "posicion": "DEF",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/dean-huijsen/fotos/HUIJSEN_CARITA_1500X2000.png"
+    },
+    {
+      "id": "bellingham",
+      "nombre": "Jude Bellingham",
+      "dorsal": 5,
+      "posicion": "MED",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/jude-bellingham/assets/BELLINGHAM_CARITA_1500X2000.png"
+    },
+    {
+      "id": "camavinga",
+      "nombre": "Eduardo Camavinga",
+      "dorsal": 6,
+      "posicion": "MED",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/eduardo-camavinga/assets/CAMAVINGA_CARITA_1500X2000.png"
+    },
+    {
+      "id": "vinicius",
+      "nombre": "Vini Jr.",
+      "dorsal": 7,
+      "posicion": "DEL",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/vinicius-paixao-de-oliveira-junior-/assets/VINI_CARITA_1500X2000.png"
+    },
+    {
+      "id": "valverde",
+      "nombre": "Fede Valverde",
+      "dorsal": 8,
+      "posicion": "MED",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/federico-santiago-valverde-dipetta/assets/VALVERDE_CARITA_1500X2000.png"
+    },
+    {
+      "id": "endrick",
+      "nombre": "Endrick",
+      "dorsal": 9,
+      "posicion": "DEL",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/endrick/assets/ENDRICK_CARITA_1500X2000.png"
+    },
+    {
+      "id": "mbappe",
+      "nombre": "Kylian Mbappé",
+      "dorsal": 10,
+      "posicion": "DEL",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/mbappe/assets/MBAPPE_CARITA_1500X2000.png"
+    },
+    {
+      "id": "rodrygo",
+      "nombre": "Rodrygo",
+      "dorsal": 11,
+      "posicion": "DEL",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/rodrygo-goes/assets/RODRYGO_CARITA_1500X2000.png"
+    },
+    {
+      "id": "trent",
+      "nombre": "Trent Alexander-Arnold",
+      "dorsal": 12,
+      "posicion": "DEF",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/alexander-arnold/fotos/TRENT_CARITA_1500X2000.png"
+    },
+    {
+      "id": "lunin",
+      "nombre": "Andriy Lunin",
+      "dorsal": 13,
+      "posicion": "POR",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/andriy-lunin/assets/LUNIN_CARITA_1500X2000.png"
+    },
+    {
+      "id": "tchouameni",
+      "nombre": "Aurélien Tchouaméni",
+      "dorsal": 14,
+      "posicion": "MED",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/aurelien-tchouameni/assets/TCHOUAMENI_CARITA_1500X2000.png"
+    },
+    {
+      "id": "arda_guler",
+      "nombre": "Arda Güler",
+      "dorsal": 15,
+      "posicion": "MED",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/arda-guler/assets/GULER_CARITA_1500X2000.png"
+    },
+    {
+      "id": "konate",
+      "nombre": "Ibrahima Konaté",
+      "dorsal": 16,
+      "posicion": "DEF",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/konate/fotos/KONATE_CARITA_1500X2000.png"
+    },
+    {
+      "id": "cucurella",
+      "nombre": "Marc Cucurella",
+      "dorsal": 17,
+      "posicion": "DEF",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/cucurella/fotos/CUCURELLA_CARITA_1500X2000.png"
+    },
+    {
+      "id": "alvaro_carreras",
+      "nombre": "Álvaro Carreras",
+      "dorsal": 18,
+      "posicion": "DEF",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/alvaro-carreras/assets/CARRERAS_CARITA_1500X2000.png"
+    },
+    {
+      "id": "carlos_espi",
+      "nombre": "Carlos Espí",
+      "dorsal": 19,
+      "posicion": "DEL",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/carlos-espi/fotos/ESPI_CARITA_1500X2000.png"
+    },
+    {
+      "id": "bernardo_silva",
+      "nombre": "Bernardo Silva",
+      "dorsal": 20,
+      "posicion": "MED",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/bernardo-silva/fotos/BERNARDO_CARITA_1500X2000.png"
+    },
+    {
+      "id": "brahim",
+      "nombre": "Brahim Díaz",
+      "dorsal": 21,
+      "posicion": "DEL",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/brahim-diaz/assets/BRAHIM_CARITA_1500X2000.png"
+    },
+    {
+      "id": "rudiger",
+      "nombre": "Antonio Rüdiger",
+      "dorsal": 22,
+      "posicion": "DEF",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/antonio-rudiger/assets/RUDIGER_CARITA_1500X2000.png"
+    },
+    {
+      "id": "ferland_mendy",
+      "nombre": "Ferland Mendy",
+      "dorsal": 23,
+      "posicion": "DEF",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/ferland-mendy/assets/MENDY_CARITA_1500X2000.png"
+    },
+    {
+      "id": "dumfries",
+      "nombre": "Denzel Dumfries",
+      "dorsal": 24,
+      "posicion": "DEF",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/denzel-dumfries/assets/DUMFRIES_CARITA_1500X2000.png"
+    },
+    {
+      "id": "yan_diomande",
+      "nombre": "Yan Diomande",
+      "dorsal": 25,
+      "posicion": "DEL",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/yan-diomande/fotos/DIOMANDE_CARITA_1500X2000.png"
+    },
+    {
+      "id": "thiago_pitarch",
+      "nombre": "Thiago Pitarch",
+      "dorsal": 27,
+      "posicion": "MED",
+      "foto": "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/3kq9cckrnlogidldtdie2fkbl/players/thiago-pitarch-pinar/assets/THIAGO_CARITA_1500X2000.png"
+    }
+  ]
+}

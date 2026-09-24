@@ -26,6 +26,11 @@ Uso (desde la carpeta scripts/youtube):
     python futbol_jugadores.py preparar --equipo barca [--jugador pedri] [--forzar]
     python futbol_jugadores.py nota     --equipo barca --jugador pedri --nota 7.5
 
+Si todas las fotos oficiales de un club comparten encuadre (p.ej. las de
+realmadrid.com, 1500x2000), en plantilla.json se puede fijar
+    "encuadre": {"escala": 0.397, "dx": 0, "dy": -9}
+y se aplica a todas igual, sin detectar caras (más uniforme).
+
 Ajuste fino: si a un jugador la detección de cara lo deja un poco
 desplazado, añade en su entrada de plantilla.json
     "ajuste": {"escala": 1.05, "dx": 0, "dy": -10}
@@ -199,7 +204,23 @@ def encuadrar(recorte: Image.Image, config: dict, ajuste: dict) -> Image.Image:
     return lienzo
 
 
-def preparar_jugador(equipo: str, jugador: dict, config: dict, elipse: Image.Image) -> bool:
+def encuadre_fijo(img: Image.Image, config: dict, encuadre: dict, ajuste: dict) -> Image.Image:
+    """Misma escala y desplazamiento para todas las fotos de un equipo cuyas
+    fotos oficiales comparten encuadre de estudio (campo "encuadre" de
+    plantilla.json). Respeta las diferencias reales de tamaño entre
+    jugadores, cosa que el encuadre por la cara no hace."""
+    escala = encuadre["escala"] * ajuste.get("escala", 1.0)
+    nuevo = img.resize((round(img.width * escala), round(img.height * escala)), Image.LANCZOS)
+    dx = round(config["lienzo"]["ancho"] / 2 - nuevo.width / 2) + encuadre.get("dx", 0) + ajuste.get("dx", 0)
+    dy = encuadre.get("dy", 0) + ajuste.get("dy", 0)
+    lienzo = Image.new("RGBA", (config["lienzo"]["ancho"], config["lienzo"]["alto"]), (0, 0, 0, 0))
+    lienzo.paste(nuevo, (dx, dy))
+    return lienzo
+
+
+def preparar_jugador(
+    equipo: str, jugador: dict, config: dict, elipse: Image.Image, encuadre: dict | None = None
+) -> bool:
     original = buscar_original(equipo, jugador["id"])
     if original is None:
         print(f" - {jugador['nombre']}: falta originales/{jugador['id']}.jpg|png|webp")
@@ -212,6 +233,8 @@ def preparar_jugador(equipo: str, jugador: dict, config: dict, elipse: Image.Ima
         # PNG oficial de la ficha del club (670x790, ya recortado): viene con
         # el mismo encuadre que la foto de ejemplo, se usa tal cual.
         jugador_png = img
+    elif encuadre:
+        jugador_png = encuadre_fijo(quitar_fondo(img), config, encuadre, jugador.get("ajuste", {}))
     else:
         recorte = quitar_fondo(img)
         jugador_png = encuadrar(recorte, config, jugador.get("ajuste", {}))
@@ -283,8 +306,8 @@ def cmd_estado(args, config):
 
 
 def cmd_descargar(args, config):
-    """Baja el PNG oficial recortado (670x790) de la ficha de cada jugador en
-    la web del club (campo "ficha" de plantilla.json) a originales/<id>.png."""
+    """Baja el PNG oficial recortado de cada jugador a originales/<id>.png,
+    desde el enlace "foto" o, si no hay, desde su "ficha" en la web del club."""
     import re
     import urllib.request
 
@@ -299,16 +322,22 @@ def cmd_descargar(args, config):
     for j in plantilla["jugadores"]:
         if args.jugador and j["id"] != args.jugador:
             continue
-        if not j.get("ficha"):
-            print(f" - {j['nombre']}: sin enlace de ficha en plantilla.json")
+        if j.get("foto"):
+            # Enlace directo al PNG recortado (p.ej. realmadrid.com, 1500x2000).
+            url = j["foto"]
+        elif j.get("ficha"):
+            # Ficha de fcbarcelona.com: el PNG de 670x790 está en la cabecera.
+            ficha = get(j["ficha"]).decode("utf-8", errors="replace")
+            m = re.search(r'class="player-hero__img" src="([^"?]+)', ficha)
+            if not m:
+                print(f" - {j['nombre']}: no encuentro la foto en {j['ficha']}")
+                continue
+            url = f"{m[1]}?width={ancho}&height={alto}"
+        else:
+            print(f" - {j['nombre']}: sin 'foto' ni 'ficha' en plantilla.json")
             continue
-        ficha = get(j["ficha"]).decode("utf-8", errors="replace")
-        m = re.search(r'class="player-hero__img" src="([^"?]+)', ficha)
-        if not m:
-            print(f" - {j['nombre']}: no encuentro la foto en {j['ficha']}")
-            continue
-        (carpeta / f"{j['id']}.png").write_bytes(get(f"{m[1]}?width={ancho}&height={alto}"))
-        print(f" - {j['nombre']}: {m[1].rsplit('/', 1)[1]}")
+        (carpeta / f"{j['id']}.png").write_bytes(get(url))
+        print(f" - {j['nombre']}: {url.split('?')[0].rsplit('/', 1)[1]}")
 
 
 def cmd_preparar(args, config):
@@ -322,7 +351,7 @@ def cmd_preparar(args, config):
         destino = FUTBOL_DIR / args.equipo / f"{j['id']}.png"
         if destino.exists() and not args.forzar and not args.jugador:
             continue
-        hechos += preparar_jugador(args.equipo, j, config, elipse)
+        hechos += preparar_jugador(args.equipo, j, config, elipse, plantilla.get("encuadre"))
     print(f"Listo: {hechos} foto(s) generada(s) en {FUTBOL_DIR / args.equipo}")
 
 

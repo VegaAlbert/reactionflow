@@ -26,4 +26,10 @@ La elipse (elipse.png) y su posicion estan en config.json y son las
 mismas para todos los jugadores. La cara de cada jugador se detecta y se
 escala/coloca siempre igual que en la foto de ejemplo de Pau Cubarsi.
 fondos/  -> fondo del campo para la alineacion
-escudos/ -> escudos de los clubes
+escudos/ -> escudos de los clubes: barca.png, madrid.png (1000 px de alto,
+           fondo transparente) y el .svg original para exportar a
+           cualquier tamano.
+
+madrid/plantilla.json lleva un "encuadre" fijo porque todas las fotos
+oficiales de realmadrid.com (1500x2000) estan hechas con el mismo
+encuadre; asi todos los jugadores quedan a la misma escala.
