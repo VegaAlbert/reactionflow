@@ -78,10 +78,13 @@ SLANG_BANK = [
     "let him cook", "qué nivel", "está tocho", "está brutal", "está on fire",
     "nivel dios", "una pasada", "me quiero desinstalar", "necesito contexto",
     "¿pero esto qué es?", "quién te ha dado permiso", "lore", "plot twist",
-    "main character", "skill issue", "menudo W", "menuda L", "cringe",
+    "main character", "skill issue", "victoria total", "derrota total", "cringe",
     "based", "mid", "peak", "brainrot", "sus", "aura", "+1000 de aura",
-    "flipo", "qué tela", "qué fuerte", "menuda movida", "a tope", "full equip",
+    "flipo", "qué tela", "qué fuerte", "menuda movida", "a tope", "a todo trapo",
 ]
+# Nota: se evitan expresiones de una sola letra tipo "W"/"L" (formato de meme
+# visual/escrito) — dichas en voz alta por un sintetizador no suenan a nada
+# natural, solo tienen sentido leídas como texto.
 
 # ----------------------------------------------------------------------------
 
@@ -181,6 +184,19 @@ def extract_frames(filepath: Path, tmp_dir: Path, count: int) -> list:
         frame_paths.append(frame_path)
 
     return frame_paths
+
+
+def has_audio_stream(filepath: Path) -> bool:
+    result = subprocess.run(
+        [
+            "ffprobe", "-v", "error",
+            "-select_streams", "a",
+            "-show_entries", "stream=index",
+            "-of", "csv=p=0", str(filepath),
+        ],
+        capture_output=True, text=True,
+    )
+    return bool(result.stdout.strip())
 
 
 def extract_audio(filepath: Path, tmp_dir: Path) -> Path:
@@ -296,7 +312,11 @@ def generate_reaction_script(
             f"momento da risa, exprésalo con palabras y entonación (exclamaciones, comentarios "
             f"incrédulos) en vez de transcribir la risa.\n"
             f"2. No empieces el guion con saludos genéricos (\"Hola a todos\", \"Miau\", etc.) — "
-            f"eso se añade aparte automáticamente. Empieza directo con la reacción al vídeo.\n\n"
+            f"eso se añade aparte automáticamente. Empieza directo con la reacción al vídeo.\n"
+            f"3. NUNCA escribas números romanos (VI, IV, III, IX...) — el sintetizador de voz "
+            f"los lee mal (p.ej. \"GTA VI\" lo pronuncia como \"GTA bis\", no \"GTA seis\"). "
+            f"Si necesitas nombrar algo con número romano en el título/marca real, escríbelo tal "
+            f"y como se pronuncia (\"GTA 6\" o mejor \"GTA seis\").\n\n"
             f"Escribe un guion de reacción en ESPAÑOL, en un tono juvenil y de internet — nada de "
             f"narrador neutro de manual. Puedes tirar de expresiones tipo (elige solo 2-4 por "
             f"guion, las que encajen mejor con el momento, sin forzarlas todas de golpe): "
@@ -387,10 +407,14 @@ def main():
             print("  Extrayendo fotogramas...")
             frame_paths = extract_frames(filepath, tmp_dir, FRAMES_PER_VIDEO)
 
-            print("  Transcribiendo audio...")
-            audio_path = extract_audio(filepath, tmp_dir)
-            transcript = transcribe_audio(audio_path, whisper_model)
-            print(f"  Transcripción: \"{transcript[:80]}\"" if transcript else "  (sin diálogo detectado)")
+            if has_audio_stream(filepath):
+                print("  Transcribiendo audio...")
+                audio_path = extract_audio(filepath, tmp_dir)
+                transcript = transcribe_audio(audio_path, whisper_model)
+                print(f"  Transcripción: \"{transcript[:80]}\"" if transcript else "  (sin diálogo detectado)")
+            else:
+                print("  (vídeo sin audio, se omite la transcripción)")
+                transcript = ""
 
             if args.dry_run:
                 processed_count += 1

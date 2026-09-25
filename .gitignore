@@ -16,6 +16,8 @@ scripts/youtube/processed_clips/
 scripts/youtube/audio/
 scripts/youtube/avatar_clips/
 scripts/youtube/final/
+scripts/youtube/_preview_audio.mp3
+scripts/youtube/_tmp_*/
 test/
 videos/
 
