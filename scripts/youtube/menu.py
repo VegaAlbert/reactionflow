@@ -1700,6 +1700,83 @@ def flow_show_spend():
 
 
 # ----------------------------------------------------------------------------
+# Opción 8 — vídeo de notas de fútbol
+# ----------------------------------------------------------------------------
+
+EQUIPOS_FUTBOL = [("barca", "FC Barcelona"), ("madrid", "Real Madrid")]
+
+
+def flow_futbol():
+    """Elige equipo y partido, Claude pone las notas (se pueden rehacer o
+    editar) y se monta el vídeo del gato con futbol_video.py."""
+    import futbol_partido as fp
+
+    print("\n--- Vídeo de notas de fútbol ---")
+    for i, (_, nombre) in enumerate(EQUIPOS_FUTBOL, start=1):
+        print(f"  {i}. {nombre}")
+    choice = input("¿Qué equipo? (número): ").strip()
+    if not choice.isdigit() or not (1 <= int(choice) <= len(EQUIPOS_FUTBOL)):
+        return
+    equipo = EQUIPOS_FUTBOL[int(choice) - 1][0]
+
+    try:
+        plantilla = fp.fj.load_plantilla(equipo)
+        print("  Buscando los últimos partidos...")
+        partidos = fp.partidos_recientes(fp.espn_id_equipo(plantilla, equipo))
+        if not partidos:
+            print("  No encuentro partidos jugados.")
+            return
+        for i, p in enumerate(partidos, start=1):
+            print(f"  {i}. {p['fecha']}  {p['titulo']}  ({p['competicion']})")
+        choice = input("¿Qué partido? (número, Enter = el último): ").strip() or "1"
+        if not choice.isdigit() or not (1 <= int(choice) <= len(partidos)):
+            return
+        evento = partidos[int(choice) - 1]["evento"]
+
+        # Si ya se hicieron las notas de este partido, se pueden reutilizar.
+        ruta = next(
+            (r for r in (fp.fj.FUTBOL_DIR / equipo / "partidos").glob("*.json")
+             if f"evento {evento}" in " ".join(_load_json(r).get("fuentes", []))),
+            None,
+        ) if (fp.fj.FUTBOL_DIR / equipo / "partidos").exists() else None
+        if ruta and input(f"  Ya hay notas de este partido ({ruta.name}). ¿Usarlas? [S/n]: ").strip().lower() in ("n", "no"):
+            ruta = None
+        if ruta is None:
+            ruta = fp.generar(equipo, evento, None)
+        fp.imprimir_notas(ruta)
+
+        while True:
+            choice = input(
+                "\n  ¿Te valen las notas? [s] sí, montar el vídeo / [n] rehacer con Claude / "
+                "[e] editarlas a mano / [c] cancelar: "
+            ).strip().lower()
+            if choice in ("s", "si", "sí", ""):
+                break
+            if choice == "n":
+                motivo = input("  ¿Qué cambiarías? (p.ej. 'Pedri merece más', 'más gracioso'): ").strip()
+                ruta = fp.generar(equipo, evento, motivo or "Hazlo mejor")
+                fp.imprimir_notas(ruta)
+            elif choice == "e":
+                open_file(ruta)
+                input("  Edita notas o textos en el archivo, guárdalo y pulsa Enter...")
+                fp.imprimir_notas(ruta)
+            elif choice == "c":
+                return
+    except SystemExit as e:
+        print(f"  [ERROR] {e}")
+        return
+
+    print("\n  Montando el vídeo (voz de ElevenLabs + gato)...")
+    salida = FINAL_DIR / f"futbol_{ruta.stem}.mp4"
+    if not run_step("futbol_video.py", str(ruta), "--salida", str(salida)):
+        print("  Fallo montando el vídeo.")
+        return
+    print(f"\n  Hecho: {salida.resolve()}")
+    print("  Para publicarlo en TikTok, usa la opción 5 del menú.")
+    open_file(salida)
+
+
+# ----------------------------------------------------------------------------
 # Menú principal
 # ----------------------------------------------------------------------------
 
@@ -1716,6 +1793,7 @@ def main_menu():
         print("5. Ver / publicar vídeos terminados")
         print("6. Regenerar avatar o recomponer un vídeo ya hecho")
         print("7. Ver créditos gastados (Replicate / ElevenLabs / Claude)")
+        print("8. Vídeo de notas de fútbol (Barça / Madrid)")
         print("0. Salir")
 
         choice = input("\nElige una opción: ").strip()
@@ -1735,6 +1813,8 @@ def main_menu():
                 flow_regenerate_menu()
             elif choice == "7":
                 flow_show_spend()
+            elif choice == "8":
+                flow_futbol()
             elif choice == "0":
                 print("Hasta luego.")
                 break

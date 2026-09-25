@@ -1,0 +1,197 @@
+{
+  "equipo": "FC Barcelona",
+  "temporada": "2026/27",
+  "fuente": "Web oficial: https://www.fcbarcelona.com/es/futbol/primer-equipo/jugadores (septiembre 2026)",
+  "espn_id": 83,
+  "jugadores": [
+    {
+      "id": "joan_garcia",
+      "nombre": "Joan Garcia",
+      "dorsal": 1,
+      "posicion": "POR",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/110491/joan-garcia"
+    },
+    {
+      "id": "joao_cancelo",
+      "nombre": "João Cancelo",
+      "dorsal": 2,
+      "posicion": "DEF",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/5051/joao-pedro-cavaco-cancelo"
+    },
+    {
+      "id": "alex_balde",
+      "nombre": "Álex Balde",
+      "dorsal": 3,
+      "posicion": "DEF",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/68906/alejandro-balde"
+    },
+    {
+      "id": "brian_farinas",
+      "nombre": "Brian Fariñas",
+      "dorsal": 4,
+      "posicion": "MED",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/140515/brian-farinas"
+    },
+    {
+      "id": "pau_cubarsi",
+      "nombre": "Pau Cubarsí",
+      "dorsal": 5,
+      "posicion": "DEF",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/129400/pau-cubarsi"
+    },
+    {
+      "id": "gavi",
+      "nombre": "Gavi",
+      "dorsal": 6,
+      "posicion": "MED",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/116719/pablo-paez-gavira"
+    },
+    {
+      "id": "fermin_lopez",
+      "nombre": "Fermín López",
+      "dorsal": 7,
+      "posicion": "MED",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/118929/fermin-lopez"
+    },
+    {
+      "id": "pedri",
+      "nombre": "Pedri",
+      "dorsal": 8,
+      "posicion": "MED",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/70486/pedro-gonzalez-lopez"
+    },
+    {
+      "id": "gabriel_jesus",
+      "nombre": "Gabriel Jesus",
+      "dorsal": 9,
+      "posicion": "DEL",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/19680/gabriel-fernando-de-jesus"
+    },
+    {
+      "id": "lamine_yamal",
+      "nombre": "Lamine Yamal",
+      "dorsal": 10,
+      "posicion": "DEL",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/129404/lamine-yamal-nasraoui-ebana"
+    },
+    {
+      "id": "raphinha",
+      "nombre": "Raphinha",
+      "dorsal": 11,
+      "posicion": "DEL",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/24156/raphael-dias-belloli"
+    },
+    {
+      "id": "xavi_espart",
+      "nombre": "Xavi Espart",
+      "dorsal": 12,
+      "posicion": "DEF",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/141001/xavi-espart"
+    },
+    {
+      "id": "szczesny",
+      "nombre": "Szczęsny",
+      "dorsal": 13,
+      "posicion": "POR",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/3543/wojciech-szczesny"
+    },
+    {
+      "id": "adeyemi",
+      "nombre": "Karim Adeyemi",
+      "dorsal": 14,
+      "posicion": "DEL",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/52163/karim-adeyemi"
+    },
+    {
+      "id": "christensen",
+      "nombre": "Christensen",
+      "dorsal": 15,
+      "posicion": "DEF",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/4495/andreas-christensen"
+    },
+    {
+      "id": "rodri",
+      "nombre": "Rodri",
+      "dorsal": 16,
+      "posicion": "MED",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/16286/rodrigo-hernandez-cascante"
+    },
+    {
+      "id": "anthony_gordon",
+      "nombre": "Anthony Gordon",
+      "dorsal": 17,
+      "posicion": "DEL",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/23747/anthony-gordon"
+    },
+    {
+      "id": "gerard_martin",
+      "nombre": "Gerard Martín",
+      "dorsal": 18,
+      "posicion": "DEF",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/111861/gerard-martin"
+    },
+    {
+      "id": "roony_bardghji",
+      "nombre": "Roony Bardghji",
+      "dorsal": 19,
+      "posicion": "DEL",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/123727/roony-bardghji"
+    },
+    {
+      "id": "dani_olmo",
+      "nombre": "Dani Olmo",
+      "dorsal": 20,
+      "posicion": "MED",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/16677/dani-olmo"
+    },
+    {
+      "id": "frenkie_de_jong",
+      "nombre": "Frenkie de Jong",
+      "dorsal": 21,
+      "posicion": "MED",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/16291/frenkie-de-jong"
+    },
+    {
+      "id": "marc_bernal",
+      "nombre": "Marc Bernal",
+      "dorsal": 22,
+      "posicion": "MED",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/141411/marc-bernal"
+    },
+    {
+      "id": "jules_kounde",
+      "nombre": "Jules Koundé",
+      "dorsal": 23,
+      "posicion": "DEF",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/15552/jules-kounde"
+    },
+    {
+      "id": "eric_garcia",
+      "nombre": "Eric Garcia",
+      "dorsal": 24,
+      "posicion": "DEF",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/24635/eric-garcia"
+    },
+    {
+      "id": "livakovic",
+      "nombre": "Dominik Livaković",
+      "dorsal": 25,
+      "posicion": "POR",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/16668/dominik-livakovic"
+    },
+    {
+      "id": "jesse_bisiwu",
+      "nombre": "Jesse Bisiwu",
+      "dorsal": 27,
+      "posicion": "DEL",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/136745/jesse-bisiwu"
+    },
+    {
+      "id": "hamza_abdelkarim",
+      "nombre": "Hamza Abdelkarim",
+      "dorsal": 29,
+      "posicion": "DEL",
+      "ficha": "https://www.fcbarcelona.es/es/futbol/primer-equipo/jugadores/572280/hamza-mohamed-abdelkarim-elsayed-selim"
+    }
+  ]
+}

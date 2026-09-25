@@ -1,0 +1,15 @@
+{
+  "_comentario": "Plantilla comun a TODAS las fotos de jugadores (medida sobre la foto de ejemplo de Pau Cubarsi). No cambiar una vez generadas las fotos, o habria que regenerarlas todas.",
+  "lienzo": {"ancho": 670, "alto": 790},
+  "cara": {"ancho": 176, "centro_x": 339, "arriba_y": 46},
+  "elipse": {
+    "centro_x": 335,
+    "centro_y": 727,
+    "radio_x": 125,
+    "radio_y": 57,
+    "grosor_borde": 5,
+    "color_borde": [227, 6, 19],
+    "color_relleno": [255, 255, 255]
+  },
+  "nota": {"color": [20, 20, 20], "tamano": 78}
+}
