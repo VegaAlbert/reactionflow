@@ -22,11 +22,12 @@ Uso (desde la carpeta scripts/youtube):
     python futbol_video.py <partido.json> --rehacer-voz   # vuelve a pedir todos los audios
 
 Los audios de cada frase se guardan en futbol_tmp/<partido>/ y se reutilizan
-en la siguiente ejecución: si cambias el texto de un jugador, borra su
-audio (o usa --rehacer-voz) para que se regenere.
+en la siguiente ejecución mientras el texto no cambie (así no se gasta
+ElevenLabs de más al rehacer el vídeo).
 """
 
 import argparse
+import hashlib
 import json
 import os
 import random
@@ -82,7 +83,12 @@ def generar_voz(frases: list[tuple[str, str]], carpeta: Path, prueba: bool, reha
     """Un audio por frase (clave, texto). Devuelve las rutas en el mismo orden."""
     carpeta.mkdir(parents=True, exist_ok=True)
     ext = "wav" if prueba else "mp3"
-    rutas = [carpeta / f"{i:02d}_{clave}.{ext}" for i, (clave, _) in enumerate(frases)]
+    # El nombre lleva un resumen del texto: si cambias lo que dice el gato de
+    # un jugador, se genera un audio nuevo en vez de reutilizar el viejo.
+    rutas = [
+        carpeta / f"{i:02d}_{clave}_{hashlib.sha1(texto.encode('utf-8')).hexdigest()[:8]}.{ext}"
+        for i, (clave, texto) in enumerate(frases)
+    ]
     pendientes = [(r, t) for r, (_, t) in zip(rutas, frases) if rehacer or not r.exists()]
     if not pendientes:
         return rutas
@@ -152,7 +158,7 @@ def montar_imagenes(partido: dict, tramos: list, duracion: float, tmp: Path) -> 
     (imagen + cuánto dura en pantalla)."""
     notas = {k: v["nota"] for k, v in partido["jugadores"].items()}
     orden = partido.get("orden", partido["once"])
-    base = {k: partido[k] for k in ("equipo", "formacion", "once", "marcador", "competicion") if k in partido}
+    base = {k: partido[k] for k in ("equipo", "formacion", "once", "marcador", "competicion", "extras") if k in partido}
 
     escenas = []  # (png, hasta_segundo)
 
