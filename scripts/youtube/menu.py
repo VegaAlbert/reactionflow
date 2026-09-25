@@ -57,12 +57,37 @@ REPLICATE_COST_PER_SECOND = 0.02  # wan-video/wan-2.2-s2v
 # ----------------------------------------------------------------------------
 
 
+def play_ok_sound() -> None:
+    """Mini "ding-ding" ascendente (dos tonos generados, no el sonido de
+    sistema de Windows) para marcar que un paso terminó bien."""
+    try:
+        import winsound
+        winsound.Beep(880, 90)
+        winsound.Beep(1318, 120)
+    except Exception:
+        pass  # no Windows, o sin dispositivo de audio — no es motivo para parar el programa
+
+
+def play_error_sound() -> None:
+    """Mini "buzz" grave descendente (dos tonos generados) para marcar que
+    un paso falló."""
+    try:
+        import winsound
+        winsound.Beep(392, 140)
+        winsound.Beep(262, 180)
+    except Exception:
+        pass
+
+
 def run_step(script_name: str, *args: str) -> bool:
     """Ejecuta uno de los scripts del pipeline como subproceso, mostrando su
-    salida en directo (misma consola). Devuelve True si terminó sin error."""
+    salida en directo (misma consola). Devuelve True si terminó sin error.
+    Suena un aviso corto de éxito/fallo al terminar cada paso."""
     cmd = [PYTHON, script_name, *args]
     result = subprocess.run(cmd)
-    return result.returncode == 0
+    ok = result.returncode == 0
+    play_ok_sound() if ok else play_error_sound()
+    return ok
 
 
 YES_ANSWERS = ("s", "si", "sí", "y", "yes")
@@ -190,6 +215,23 @@ def _find_vlc() -> str | None:
 VLC_PATH = _find_vlc()
 
 
+def move_when_unlocked(src: Path, dst: Path, attempts: int = 10, delay: float = 1.0) -> None:
+    """Como shutil.move, pero reintenta si el reproductor externo (VLC, o el
+    de Windows) todavía tiene el archivo de audio abierto y bloqueado —
+    evita el WinError 32 al confirmar la narración justo después de
+    escucharla."""
+    import time
+
+    for i in range(attempts):
+        try:
+            shutil.move(str(src), str(dst))
+            return
+        except PermissionError:
+            if i == attempts - 1:
+                raise
+            time.sleep(delay)
+
+
 def open_file(path: Path) -> None:
     """Abre vídeos/audios con VLC si está instalado; cualquier otro tipo de
     archivo (o si no se encuentra VLC) usa el programa por defecto de Windows."""
@@ -224,7 +266,15 @@ def write_own_script(stem: str, video_path: Path, duration: float):
         open_file(video_path)
 
     while True:
-        custom_text = input("\n  Escribe tú el guion (lo que dirá y aparecerá en subtítulos):\n  > ").strip()
+        # Admite pegar el texto directamente O la ruta de un .txt con el
+        # guion ya escrito — pegar párrafos largos de golpe en la consola de
+        # Windows a veces deja texto atascado en el buffer que se cuela más
+        # tarde en otra pregunta cualquiera; escribirlo en un .txt aparte lo
+        # evita.
+        custom_text = read_text_or_file(
+            "\n  Escribe tú el guion (lo que dirá y aparecerá en subtítulos), o la ruta "
+            "de un .txt con el texto ya escrito:\n  > "
+        )
         if not custom_text:
             print("  (vacío, no se ha cambiado nada)")
             return None
@@ -259,12 +309,21 @@ def write_own_script(stem: str, video_path: Path, duration: float):
 PREVIEW_AUDIO_PATH = Path("./_preview_audio.mp3")
 
 
-def preview_and_confirm_audio(script_text: str, duration: float) -> str:
+def preview_and_confirm_audio(script_text: str, duration: float,
+                               save_audio_to: Path | None = None,
+                               voice_id_override: str | None = None) -> str:
     """Genera un audio de prueba (sin el 'miau' inicial, solo para comprobar
     cómo suena de verdad la pronunciación) y deja escuchar y corregir el
     texto tantas veces como haga falta antes de dar el guion por bueno.
     Esto es lo que detecta cosas como números romanos mal leídos o
-    anglicismos que el sintetizador pronuncia distinto a como se escriben."""
+    anglicismos que el sintetizador pronuncia distinto a como se escriben.
+
+    Si se aprueba y se pasó 'save_audio_to', ese audio de prueba (que ya es
+    exactamente la narración del texto aprobado) se reutiliza como archivo
+    definitivo ahí — en vez de generarlo otra vez con ElevenLabs, que
+    duplicaría el gasto de créditos sin ningún motivo real. El propio
+    llamador se encarga de comprobar si save_audio_to.exists() al volver."""
+    import shutil
     import text_to_speech
 
     try:
@@ -273,14 +332,18 @@ def preview_and_confirm_audio(script_text: str, duration: float) -> str:
         print(f"\n  [AVISO] No se pudo preparar la vista previa de audio ({e}).")
         print("  Se sigue con el guion tal cual, sin comprobar la pronunciación.")
         return script_text
+    if voice_id_override:
+        voice_id = voice_id_override
 
     while True:
         print("\n  Generando un audio de prueba para comprobar cómo suena...")
         ok = text_to_speech.generate_speech(client, voice_id, script_text, PREVIEW_AUDIO_PATH)
         if not ok:
+            play_error_sound()
             print("  No se pudo generar el audio de prueba. Se sigue con el texto tal cual.")
             return script_text
 
+        play_ok_sound()
         open_file(PREVIEW_AUDIO_PATH)
         options = {
             "s": "ok", "si": "ok", "sí": "ok", "y": "ok", "yes": "ok",
@@ -292,6 +355,17 @@ def preview_and_confirm_audio(script_text: str, duration: float) -> str:
         )
 
         if choice == "ok":
+            if save_audio_to is not None:
+                save_audio_to.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    move_when_unlocked(PREVIEW_AUDIO_PATH, save_audio_to)
+                except PermissionError:
+                    print("  [AVISO] El reproductor todavía tiene el audio de prueba abierto; "
+                          "ciérralo y pulsa Enter para reintentar.")
+                    input()
+                    move_when_unlocked(PREVIEW_AUDIO_PATH, save_audio_to)
+                print("  (Este mismo audio se reutiliza como narración definitiva — "
+                      "no se genera otra vez, así no se gasta cuota por duplicado.)")
             return script_text
 
         print(f"\n  Texto actual:\n  \"{script_text}\"")
@@ -333,7 +407,9 @@ def ask_video_title() -> tuple:
         return title, title_duration
 
 
-DEFAULT_OUTRO_TEXT = "Suscríbete para más"
+DEFAULT_OUTRO_TEXT = "Suscríbete para más novedades"
+# Diferencia mínima (s) entre clip y narración para preguntar si dejar el clip entero.
+FULL_CLIP_MIN_GAP = 2.0
 
 
 def ask_outro_text() -> str | None:
@@ -365,7 +441,9 @@ def generate_silence(duration: float, output_path: Path) -> bool:
 
 
 def build_sparse_narration(stem: str, intro_text: str | None, outro_text: str | None,
-                            video_duration: float) -> tuple:
+                            video_duration: float, intro_audio: Path | None = None,
+                            outro_audio: Path | None = None,
+                            voice_id_override: str | None = None) -> tuple:
     """Para los modos donde el clip se reproduce ENTERO pero el gato solo
     habla al principio (título) y/o al final (despedida): genera un único
     ./audio/<stem>.mp3 con [narración inicial][silencio real][narración
@@ -375,6 +453,11 @@ def build_sparse_narration(stem: str, intro_text: str | None, outro_text: str | 
     el silencio real ya dentro del audio es lo que deja al gato en reposo
     en ese tramo, y las palabras de guion solo existen donde de verdad se
     habla, así que whisper las alinea justo ahí.
+
+    'intro_audio'/'outro_audio' (opcionales): si ya hay un audio aprobado en
+    la vista previa para ese texto (ver preview_and_confirm_audio), se
+    reutiliza tal cual en vez de generarlo otra vez con ElevenLabs — evita
+    duplicar el gasto de créditos en el mismo texto.
 
     Devuelve (texto_conjunto, segmentos) — segmentos = lista de (inicio, fin)
     en segundos donde SÍ hay narración, para que compose_avatar.py no atenúe
@@ -386,11 +469,18 @@ def build_sparse_narration(stem: str, intro_text: str | None, outro_text: str | 
 
     import text_to_speech
 
-    try:
-        client, voice_id = text_to_speech.get_elevenlabs_client()
-    except SystemExit as e:
-        print(f"  {e}")
-        return None, None
+    intro_ready = intro_audio is not None and intro_audio.exists()
+    outro_ready = outro_audio is not None and outro_audio.exists()
+
+    client = voice_id = None
+    if (intro_text and not intro_ready) or (outro_text and not outro_ready):
+        try:
+            client, voice_id = text_to_speech.get_elevenlabs_client()
+        except SystemExit as e:
+            print(f"  {e}")
+            return None, None
+        if voice_id_override:
+            voice_id = voice_id_override
 
     AUDIO_DIR.mkdir(parents=True, exist_ok=True)
     tmp_prefix = str(AUDIO_DIR / f"_tmp_{stem}")
@@ -398,22 +488,28 @@ def build_sparse_narration(stem: str, intro_text: str | None, outro_text: str | 
     intro_path = None
     intro_dur = 0.0
     if intro_text:
-        intro_path = Path(f"{tmp_prefix}_intro.mp3")
-        if not text_to_speech.generate_speech(client, voice_id, intro_text, intro_path):
-            print("  Fallo generando la narración inicial.")
-            return None, None
-        text_to_speech.prepend_intro_clip(intro_path)  # el "Miau" de sello, solo aquí
+        if intro_ready:
+            intro_path = intro_audio
+        else:
+            intro_path = Path(f"{tmp_prefix}_intro.mp3")
+            if not text_to_speech.generate_speech(client, voice_id, intro_text, intro_path):
+                print("  Fallo generando la narración inicial.")
+                return None, None
+        text_to_speech.prepend_intro_clip(intro_path, voice_id_override)  # el "Miau" de sello, solo aquí
         intro_dur = get_media_duration(intro_path)
 
     outro_path = None
     outro_dur = 0.0
     if outro_text:
-        outro_path = Path(f"{tmp_prefix}_outro.mp3")
-        if not text_to_speech.generate_speech(client, voice_id, outro_text, outro_path):
-            print("  Fallo generando la narración final.")
-            if intro_path:
-                intro_path.unlink(missing_ok=True)
-            return None, None
+        if outro_ready:
+            outro_path = outro_audio
+        else:
+            outro_path = Path(f"{tmp_prefix}_outro.mp3")
+            if not text_to_speech.generate_speech(client, voice_id, outro_text, outro_path):
+                print("  Fallo generando la narración final.")
+                if intro_path:
+                    intro_path.unlink(missing_ok=True)
+                return None, None
         outro_dur = get_media_duration(outro_path)
 
     silence_dur = video_duration - intro_dur - outro_dur
@@ -456,6 +552,104 @@ def build_sparse_narration(stem: str, intro_text: str | None, outro_text: str | 
     return combined_text, segments
 
 
+def append_outro_narration(stem: str, outro_text: str | None, outro_audio: Path | None,
+                            voice_id_override: str | None, pad_to: float | None = None) -> bool:
+    """Para el modo de diálogo completo: pega la despedida (p.ej. "Suscríbete
+    para más novedades") al FINAL de la narración ya lista en
+    ./audio/<stem>.mp3, y añade su texto al guion guardado para que los
+    subtítulos también la cubran (el orden de las palabras en script_es debe
+    coincidir con el orden real del audio para que whisper las alinee bien).
+
+    Si 'outro_audio' ya existe (vista previa aprobada), se reutiliza en vez
+    de generarla otra vez con ElevenLabs. Nota: como esto alarga la
+    narración más allá de lo que dura el propio clip, el vídeo de fondo
+    puede volver a su primer fotograma unos segundos mientras se dice la
+    despedida (en vez de quedarse congelado) — aceptable para un cierre
+    breve tipo "suscríbete".
+
+    'pad_to' (segundos, opcional): duración del clip cuando se quiere dejar
+    ENTERO aunque la narración sea más corta (ver ask_keep_full_clip). Rellena
+    con silencio real entre la narración y la despedida hasta llegar a esa
+    duración —el gato habla al principio, se queda en reposo el resto del
+    clip y se despide al final— y guarda 'narration_segments' para que el
+    audio original del clip solo se atenúe donde de verdad habla el gato.
+    'outro_text' puede ser None (solo se rellena con silencio)."""
+    audio_path = AUDIO_DIR / f"{stem}.mp3"
+
+    outro_path = None
+    outro_dur = 0.0
+    if outro_text:
+        if outro_audio and outro_audio.exists():
+            outro_path = outro_audio
+        else:
+            import text_to_speech
+            try:
+                client, voice_id = text_to_speech.get_elevenlabs_client()
+            except SystemExit as e:
+                print(f"  {e}")
+                return False
+            if voice_id_override:
+                voice_id = voice_id_override
+            outro_path = AUDIO_DIR / f"_tmp_{stem}_outro.mp3"
+            if not text_to_speech.generate_speech(client, voice_id, outro_text, outro_path):
+                print("  Fallo generando la despedida.")
+                return False
+        outro_dur = get_media_duration(outro_path)
+
+    parts = [audio_path]
+    segments = []
+    silence_path = None
+    if pad_to:
+        narration_dur = get_media_duration(audio_path)
+        segments.append((0.0, narration_dur))
+        t = narration_dur
+        silence_dur = pad_to - narration_dur - outro_dur
+        if silence_dur > 0.05:
+            silence_path = AUDIO_DIR / f"_tmp_{stem}_silence.mp3"
+            if generate_silence(silence_dur, silence_path):
+                parts.append(silence_path)
+                t += silence_dur
+        if outro_path:
+            segments.append((t, t + outro_dur))
+    if outro_path:
+        parts.append(outro_path)
+
+    combined_path = AUDIO_DIR / f"_tmp_{stem}_combined.mp3"
+    ok = concatenate_audio_files(parts, combined_path)
+    if outro_path and outro_path != outro_audio:
+        outro_path.unlink(missing_ok=True)
+    if silence_path:
+        silence_path.unlink(missing_ok=True)
+    if not ok:
+        return False
+    combined_path.replace(audio_path)
+
+    script_path = SCRIPTS_DIR / f"{stem}.json"
+    data = _load_json(script_path)
+    if outro_text:
+        data["script_es"] = f"{data.get('script_es', '')} {outro_text}".strip()
+    if pad_to:
+        data["narration_segments"] = segments
+    _save_json(script_path, data)
+    return True
+
+
+def ask_keep_full_clip(narration_duration: float, video_duration: float) -> bool:
+    """En diálogo completo el vídeo final dura lo mismo que la narración, así
+    que si el gato solo dice una frase corta, el clip se corta ahí. Cuando la
+    diferencia es apreciable se pregunta si mejor dejar el clip ENTERO, con
+    el gato arriba todo el rato (habla al principio y luego se queda en
+    reposo). Por defecto sí: es lo que casi siempre se quiere."""
+    if video_duration - narration_duration < FULL_CLIP_MIN_GAP:
+        return False
+    return ask_yes_no(
+        f"\n  La narración dura {narration_duration:.1f}s pero el clip dura {video_duration:.1f}s. "
+        "¿Dejo el clip entero, con el gato arriba todo el rato (habla al principio y luego "
+        "se queda en reposo)? [S/n]: ",
+        default=True,
+    )
+
+
 def ask_dialogue_mode(title: str | None) -> str:
     """Pregunta si el vídeo lleva diálogo del gato (lo normal, genera/edita un
     guion como siempre), o si va sin diálogo: solo leyendo el título en voz
@@ -479,6 +673,22 @@ def ask_dialogue_mode(title: str | None) -> str:
         return "script"
 
     return mode
+
+
+def ask_elevenlabs_voice() -> str | None:
+    """Pregunta qué voz de ElevenLabs usar en este vídeo: la de siempre
+    (ELEVENLABS_VOICE_ID del .env) o la nueva que se quiere probar. Solo se
+    pregunta cuando de verdad va a hacer falta generar algo con ElevenLabs
+    (si vas a poner tu propio .mp3 no se pregunta). Devuelve el Voice ID a
+    forzar, o None para dejar el de siempre. Cada voz tiene su propia
+    carpeta de "Miau" (ver text_to_speech.INTRO_CLIPS_DIR_BY_VOICE), para
+    que el sello suene coherente con quien narra."""
+    import text_to_speech
+    secondary = text_to_speech.SECONDARY_ELEVENLABS_VOICE_ID
+    print("\n  ¿Qué voz de ElevenLabs uso para este vídeo?")
+    print(f"  [1 = la de siempre, por defecto / 2 = la nueva ({secondary})]")
+    options = {"1": None, "2": secondary}
+    return ask_choice("  Elige 1/2 [1]: ", options, default="1")
 
 
 AVATAR_POSITION_CHOICES = {
@@ -505,6 +715,56 @@ def ask_avatar_position(video_path: Path) -> str:
     print("  [1 = arriba-derecha, por defecto / 2 = arriba-izquierda / "
           "3 = abajo-derecha / 4 = abajo-izquierda]")
     return ask_choice("  Elige 1/2/3/4 [1]: ", AVATAR_POSITION_CHOICES, default="1")
+
+
+def ask_voice_source() -> str:
+    """Pregunta si la narración la genera ElevenLabs (gasta cuota) o si el
+    usuario ya tiene el audio en un .mp3 propio — grabado él mismo, o
+    generado en otra web de texto-a-voz. Pensado para cuando se agota la
+    cuota gratuita de ElevenLabs. Devuelve 'elevenlabs' o 'custom'."""
+    print("\n  ¿Quién pone la voz de la narración?")
+    print("  [e = ElevenLabs, automático (por defecto) / m = ya tengo el audio en un .mp3 "
+          "(grabado o generado en otra web)]")
+    options = {"e": "elevenlabs", "elevenlabs": "elevenlabs", "m": "custom", "mp3": "custom"}
+    return ask_choice("  Elige e/m [e]: ", options, default="e")
+
+
+def import_custom_narration(stem: str) -> bool:
+    """Copia un .mp3 que el usuario ya tiene (grabado o generado en otra web)
+    a ./audio/<stem>.mp3 — la misma ruta que usaría ElevenLabs, así el resto
+    del pipeline (animación del avatar por volumen, subtítulos alineados con
+    whisper, mezcla de audio) funciona exactamente igual sin más cambios.
+    Reencodea con ffmpeg (evita problemas de formato/muestreo según la web de
+    origen) y le pega el mismo "Miau" de sello de identidad. Devuelve True si
+    se importó bien."""
+    while True:
+        path_str = input("  Ruta completa del .mp3 con la narración: ").strip().strip('"')
+        src = Path(path_str)
+        if src.exists():
+            break
+        print(f"  No encuentro ese archivo: {src}")
+        if not ask_yes_no("  ¿Reintentar con otra ruta? [S/n]: ", default=True):
+            return False
+
+    duration = get_media_duration(src)
+    if duration <= 0:
+        print("  Ese archivo no parece un audio válido (duración 0 o ilegible).")
+        return False
+    print(f"  Audio importado: {duration:.1f}s")
+
+    AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+    dest = AUDIO_DIR / f"{stem}.mp3"
+    result = subprocess.run(
+        ["ffmpeg", "-y", "-i", str(src), "-ar", "44100", "-ac", "1", "-b:a", "128k", str(dest)],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        print(f"  [ERROR ffmpeg] No se pudo importar el audio: {result.stderr[-400:]}")
+        return False
+
+    import text_to_speech
+    text_to_speech.prepend_intro_clip(dest)  # mismo "Miau" de sello que la narración de ElevenLabs
+    return True
 
 
 def ask_avatar_choice(stem: str) -> bool | None:
@@ -540,21 +800,47 @@ REVIEW_CHOICE_OPTIONS = {
 }
 
 
-def review_and_maybe_regenerate_script(stem: str, video_path: Path, data: dict):
+def review_and_maybe_regenerate_script(stem: str, video_path: Path, data: dict,
+                                        skip_audio_preview: bool = False,
+                                        voice_id_override: str | None = None):
     """Pregunta siempre primero quién escribe el diálogo (el gato con IA, o
     tú mismo). Si es la IA, muestra el borrador y deja aprobar/regenerar/
     escribirlo tú/saltar/parar. Una vez aceptado un texto (de cualquier
     origen), lo pasa por preview_and_confirm_audio() para comprobar cómo
-    suena de verdad antes de dar el guion por definitivo. Guarda cada
-    aprobación/rechazo en el perfil de estilo para que futuros guiones
-    tengan en cuenta el gusto real del usuario.
+    suena de verdad antes de dar el guion por definitivo — salvo que
+    skip_audio_preview sea True (vas a poner tu propio .mp3, así que
+    escuchar una vista previa con ElevenLabs solo gastaría cuota sin
+    servir para nada). Guarda cada aprobación/rechazo en el perfil de
+    estilo para que futuros guiones tengan en cuenta el gusto real del
+    usuario.
 
     Devuelve True si se aprobó un guion, None si el usuario quiere saltar
     este vídeo, o "stop" si quiere parar del todo.
     """
     duration = data["duration"]
     transcript = data.get("transcript_original", "")
-    script_text = data["script_es"]  # borrador que ya generó generate_script.py
+    script_text = data["script_es"]  # borrador que ya generó generate_script.py (vacío si --own-script)
+
+    if not script_text:
+        # Modo "yo lo escribo" (--own-script): no hay borrador de Claude que
+        # mostrar, y no se gastó nada de su API para llegar hasta aquí — se
+        # va directo a escribirlo.
+        print("\n  Este vídeo va con guion propio (no se generó ningún borrador con Claude).")
+        custom_text = write_own_script(stem, video_path, duration)
+        if not custom_text:
+            print("  No has escrito nada — se salta este vídeo.")
+            return None
+        script_text = custom_text
+        generate_script.record_feedback(stem, script_text, liked=True)
+
+        if not skip_audio_preview:
+            script_text = preview_and_confirm_audio(
+                script_text, duration, save_audio_to=AUDIO_DIR / f"{stem}.mp3",
+                voice_id_override=voice_id_override,
+            )
+        data["script_es"] = script_text
+        _save_json(SCRIPTS_DIR / f"{stem}.json", data)
+        return True
 
     open_file(video_path)  # para poder comprobar de un vistazo si el guion encaja con el vídeo
 
@@ -634,8 +920,15 @@ def review_and_maybe_regenerate_script(stem: str, video_path: Path, data: dict):
         generate_script.record_feedback(stem, script_text, liked=True)
 
     # Guion aceptado (por IA o escrito a mano): se comprueba cómo suena de
-    # verdad antes de darlo por definitivo y gastar en avatar/vídeo final.
-    script_text = preview_and_confirm_audio(script_text, duration)
+    # verdad antes de darlo por definitivo y gastar en avatar/vídeo final —
+    # salvo que la narración vaya a ser un .mp3 propio (ver arriba). Si se
+    # aprueba, ese mismo audio de prueba pasa a ser la narración definitiva
+    # (AUDIO_DIR/<stem>.mp3) en vez de generarla otra vez con ElevenLabs.
+    if not skip_audio_preview:
+        script_text = preview_and_confirm_audio(
+            script_text, duration, save_audio_to=AUDIO_DIR / f"{stem}.mp3",
+            voice_id_override=voice_id_override,
+        )
 
     data["script_es"] = script_text
     _save_json(SCRIPTS_DIR / f"{stem}.json", data)
@@ -669,17 +962,45 @@ def finish_video_interactive(stem: str) -> bool:
         # guion): el gato como mucho habla al principio (título) y/o al
         # final (despedida), con el resto del clip de fondo tal cual.
         video_duration = data.get("duration") or get_media_duration(video_path)
+
+        # Cada vista previa aprobada se guarda ya en su ruta definitiva
+        # (build_sparse_narration la reutiliza en vez de generarla otra vez
+        # con ElevenLabs, que duplicaría el gasto de créditos).
         outro_text = ask_outro_text()
+        wants_intro = dialogue_mode == "title_only"
+
+        elevenlabs_voice_id = None
+        if outro_text or wants_intro:
+            elevenlabs_voice_id = ask_elevenlabs_voice()
+
+        outro_audio_path = None
         if outro_text:
-            outro_text = preview_and_confirm_audio(outro_text, video_duration)
+            outro_audio_path = AUDIO_DIR / f"_tmp_{stem}_outro_preview.mp3"
+            outro_text = preview_and_confirm_audio(
+                outro_text, video_duration, save_audio_to=outro_audio_path,
+                voice_id_override=elevenlabs_voice_id,
+            )
+            if not outro_audio_path.exists():
+                outro_audio_path = None
 
         intro_text = None
-        if dialogue_mode == "title_only":
-            intro_text = preview_and_confirm_audio(data["title"], video_duration)
+        intro_audio_path = None
+        if wants_intro:
+            intro_audio_path = AUDIO_DIR / f"_tmp_{stem}_intro_preview.mp3"
+            intro_text = preview_and_confirm_audio(
+                data["title"], video_duration, save_audio_to=intro_audio_path,
+                voice_id_override=elevenlabs_voice_id,
+            )
+            if not intro_audio_path.exists():
+                intro_audio_path = None
 
         if intro_text or outro_text:
             print("\n  Generando narración (título/despedida)...")
-        combined_text, segments = build_sparse_narration(stem, intro_text, outro_text, video_duration)
+        combined_text, segments = build_sparse_narration(
+            stem, intro_text, outro_text, video_duration,
+            intro_audio=intro_audio_path, outro_audio=outro_audio_path,
+            voice_id_override=elevenlabs_voice_id,
+        )
 
         if combined_text is None:
             print("\n  Sin diálogo: se usará el audio original del clip (o quedará mudo si "
@@ -701,16 +1022,76 @@ def finish_video_interactive(stem: str) -> bool:
             if force_sprites is None:
                 return True
     else:
-        result = review_and_maybe_regenerate_script(stem, video_path, data)
+        # La despedida ("Suscríbete para más novedades") se pregunta SIEMPRE,
+        # también en diálogo completo — se pega al final de la narración una
+        # vez esta esté lista, sea cual sea su origen (ElevenLabs o tu mp3).
+        outro_text = ask_outro_text()
+
+        voice_source = ask_voice_source()
+        elevenlabs_voice_id = ask_elevenlabs_voice() if (voice_source == "elevenlabs" or outro_text) else None
+        result = review_and_maybe_regenerate_script(
+            stem, video_path, data, skip_audio_preview=(voice_source == "custom"),
+            voice_id_override=elevenlabs_voice_id,
+        )
         if result is None:
             return True
         if result == "stop":
             return False
 
-        print("\n  Generando narración de voz...")
-        if not run_step("text_to_speech.py", f"--only={stem}"):
-            print("  Fallo generando la voz.")
-            return True
+        audio_path = AUDIO_DIR / f"{stem}.mp3"
+        if voice_source == "custom":
+            print("\n  Importando tu propio audio...")
+            if not import_custom_narration(stem):
+                print("  Fallo importando el audio.")
+                play_error_sound()
+                return True
+            play_ok_sound()
+        elif audio_path.exists():
+            # La vista previa ya dejó aquí el audio aprobado (ver
+            # preview_and_confirm_audio) — solo falta el "Miau" de sello,
+            # que text_to_speech.py añadiría tras generar de cero.
+            import text_to_speech
+            text_to_speech.prepend_intro_clip(audio_path, elevenlabs_voice_id)
+            print(f"\n  Narración reutilizada de la vista previa: {audio_path}")
+        else:
+            print("\n  Generando narración de voz...")
+            step_args = [f"--only={stem}"]
+            if elevenlabs_voice_id:
+                step_args.append(f"--voice-id={elevenlabs_voice_id}")
+            if not run_step("text_to_speech.py", *step_args):
+                print("  Fallo generando la voz.")
+                return True
+
+        # Si la narración es bastante más corta que el clip, el vídeo final se
+        # cortaría donde acaba de hablar el gato: se ofrece dejar el clip
+        # entero (rellenando con silencio, el gato queda en reposo).
+        clip_duration = get_media_duration(video_path)
+        keep_full_clip = audio_path.exists() and ask_keep_full_clip(
+            get_media_duration(audio_path), clip_duration,
+        )
+        pad_to = clip_duration if keep_full_clip else None
+
+        if outro_text:
+            outro_audio_path = AUDIO_DIR / f"_tmp_{stem}_outro_preview.mp3"
+            outro_text = preview_and_confirm_audio(
+                outro_text, 3.0, save_audio_to=outro_audio_path,
+                voice_id_override=elevenlabs_voice_id,
+            )
+            print("\n  Añadiendo la despedida al final...")
+            if append_outro_narration(
+                stem, outro_text,
+                outro_audio_path if outro_audio_path.exists() else None,
+                elevenlabs_voice_id, pad_to=pad_to,
+            ):
+                play_ok_sound()
+            else:
+                play_error_sound()
+                print("  No se pudo añadir la despedida — el vídeo sigue sin ella.")
+        elif keep_full_clip:
+            print("\n  Alargando la narración con silencio hasta la duración del clip...")
+            if not append_outro_narration(stem, None, None, None, pad_to=pad_to):
+                play_error_sound()
+                print("  No se pudo rellenar con silencio — el vídeo se cortará al acabar la narración.")
 
         force_sprites = ask_avatar_choice(stem)
         if force_sprites is None:
@@ -736,6 +1117,17 @@ def finish_video_interactive(stem: str) -> bool:
 # ----------------------------------------------------------------------------
 
 
+def ask_script_source() -> bool:
+    """Pregunta quién escribe el diálogo: Claude (genera un borrador por
+    vídeo, gasta la API de Anthropic) o tú mismo (no gasta nada, pero
+    también se salta el filtro de reactor/montaje, que también usa Claude —
+    revisa tú que el clip valga). Devuelve True si vas a escribirlo tú."""
+    print("\n  ¿Quién escribe el diálogo de este vídeo?")
+    print("  [c = Claude genera un borrador, por defecto / y = yo lo escribo, no gastes la API]")
+    options = {"c": False, "claude": False, "y": True, "yo": True}
+    return ask_choice("  Elige c/y [c]: ", options, default="c")
+
+
 def flow_generate_from_internet():
     print("\n--- Generar vídeo completo (buscar en internet) ---")
     n_str = input("¿Cuántos vídeos nuevos buscar? [8]: ").strip()
@@ -751,8 +1143,14 @@ def flow_generate_from_internet():
         print("Fallo en el procesado.")
         return
 
+    own_script = ask_script_source()
+    if own_script:
+        print("  Aviso: al escribirlo tú también se salta el filtro de reactor/montaje "
+              "(usa Claude) — revisa tú mismo que el clip no traiga ya una cara reaccionando.")
+
     print("\n3/3 Analizando vídeos y generando guiones (descarta los que no sirven)...")
-    if not run_step("generate_script.py"):
+    script_args = ["--own-script"] if own_script else []
+    if not run_step("generate_script.py", *script_args):
         print("Fallo generando guiones.")
         return
 
@@ -793,8 +1191,13 @@ def flow_upload_local():
         return
 
     stem = f"{video_id}_9x16"
-    print("\n  Generando guion (sin filtro de reactor/montaje: lo elegiste tú a propósito)...")
-    if not run_step("generate_script.py", f"--only={stem}", "--skip-filter"):
+    own_script = ask_script_source()
+    print("\n  Generando guion (sin filtro de reactor/montaje: lo elegiste tú a propósito)"
+          + (", lo escribirás tú abajo..." if own_script else "..."))
+    script_args = [f"--only={stem}", "--skip-filter"]
+    if own_script:
+        script_args.append("--own-script")
+    if not run_step("generate_script.py", *script_args):
         print("  Fallo generando el guion.")
         return
 
@@ -897,8 +1300,12 @@ def flow_download_url():
         return
 
     stem = f"{downloaded_path.stem}_9x16"
-    print("\n  Generando guion...")
-    if not run_step("generate_script.py", f"--only={stem}", "--skip-filter"):
+    own_script = ask_script_source()
+    print("\n  Generando guion" + (" (lo escribirás tú abajo)..." if own_script else "..."))
+    script_args = [f"--only={stem}", "--skip-filter"]
+    if own_script:
+        script_args.append("--own-script")
+    if not run_step("generate_script.py", *script_args):
         print("  Fallo generando el guion.")
         return
 
@@ -1021,12 +1428,16 @@ def flow_generate_from_images():
     for i, scene in enumerate(scenes, start=1):
         print(f"\n  --- Narración {i}/{len(scenes)} ({scene['image'].name}) ---")
         estimated = max(1.0, len(scene["narration"].split()) / generate_script.WORDS_PER_SECOND)
-        scene["narration"] = preview_and_confirm_audio(scene["narration"], estimated)
-
         seg_path = AUDIO_DIR / f"{stem}_seg{i}.mp3"
-        if not text_to_speech.generate_speech(client, voice_id, scene["narration"], seg_path):
-            print("  Fallo generando esta narración.")
-            return
+        # Se guarda ya en su ruta definitiva: si se aprueba, este mismo
+        # audio se reutiliza como narración (evita generarla otra vez con
+        # ElevenLabs, que duplicaría el gasto de créditos).
+        scene["narration"] = preview_and_confirm_audio(scene["narration"], estimated, save_audio_to=seg_path)
+
+        if not seg_path.exists():
+            if not text_to_speech.generate_speech(client, voice_id, scene["narration"], seg_path):
+                print("  Fallo generando esta narración.")
+                return
         seg_paths.append(seg_path)
         durations.append(get_media_duration(seg_path))
 
@@ -1205,34 +1616,87 @@ def flow_regenerate_menu():
 
 
 # ----------------------------------------------------------------------------
-# Opción 7 — gasto estimado en Replicate
+# Opción 7 — créditos y gasto estimado (Replicate / ElevenLabs / Claude)
 # ----------------------------------------------------------------------------
+
+AVATAR_ASSETS_DIR = Path("./assets/avatar")
+REPLICATE_IMAGE_COST = 0.04  # flux-kontext-pro, por imagen (poses/expresiones)
+REPLICATE_GENERATED_IMAGES = [
+    "gato_boca_cuarto.png", "gato_boca_tres_cuartos.png",
+    "gato_alegre.png", "gato_serio.png", "gato_enfadado.png",
+    "gato_sarcastico.png", "gato_emocionado.png",
+]
+ELEVENLABS_CREDITS_PER_CHAR = 1  # eleven_multilingual_v2, comprobado con un error real de cuota
+NARRATION_SCRATCH_PREFIXES = ("_tmp_", "_preview")
 
 
 def flow_show_spend():
-    print("\n--- Gasto estimado en Replicate ---")
-    if not AVATAR_CLIPS_DIR.exists() or not any(AVATAR_CLIPS_DIR.glob("*.mp4")):
-        print("  Todavía no has generado ningún avatar con IA.")
-        return
+    print("\n--- Créditos y gasto estimado (Replicate / ElevenLabs / Claude) ---")
+    print("Todo esto es una ESTIMACIÓN local a partir de tus archivos — el saldo/cupo exacto")
+    print("siempre está en la web de cada servicio (enlaces al final de cada bloque).")
 
+    # --- Replicate: avatar animado con IA + poses/expresiones generadas ---
+    print("\n[Replicate — avatar]")
     total_seconds = 0.0
-    count = 0
-    for clip in AVATAR_CLIPS_DIR.glob("*.mp4"):
-        result = subprocess.run(
-            ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(clip)],
-            capture_output=True, text=True,
-        )
-        try:
-            total_seconds += float(result.stdout.strip())
-            count += 1
-        except ValueError:
-            pass
+    clip_count = 0
+    if AVATAR_CLIPS_DIR.exists():
+        for clip in AVATAR_CLIPS_DIR.glob("*.mp4"):
+            try:
+                total_seconds += get_media_duration(clip)
+                clip_count += 1
+            except (ValueError, subprocess.CalledProcessError):
+                pass
+    avatar_cost = total_seconds * REPLICATE_COST_PER_SECOND
 
-    cost = total_seconds * REPLICATE_COST_PER_SECOND
-    print(f"  {count} vídeo(s) de avatar generados, {total_seconds:.1f}s en total.")
-    print(f"  Coste estimado: ${cost:.2f} (a ${REPLICATE_COST_PER_SECOND}/segundo de wan-2.2-s2v).")
-    print("  Esto es una estimación local a partir de los archivos que tienes — el saldo")
-    print("  exacto siempre está en https://replicate.com/account/billing")
+    generated_images = sum(1 for name in REPLICATE_GENERATED_IMAGES if (AVATAR_ASSETS_DIR / name).exists())
+    image_cost = generated_images * REPLICATE_IMAGE_COST
+
+    if clip_count:
+        print(f"  {clip_count} vídeo(s) de avatar animados con IA, {total_seconds:.1f}s en total: "
+              f"~${avatar_cost:.2f} (a ${REPLICATE_COST_PER_SECOND}/s de wan-2.2-s2v)")
+    else:
+        print("  Ningún avatar animado con IA todavía.")
+    if generated_images:
+        print(f"  {generated_images} imagen(es) de poses/expresiones generadas: "
+              f"~${image_cost:.2f} (a ${REPLICATE_IMAGE_COST}/imagen de flux-kontext-pro)")
+    print(f"  Total estimado Replicate: ~${avatar_cost + image_cost:.2f}")
+    print("  Saldo exacto: https://replicate.com/account/billing")
+
+    # --- ElevenLabs: caracteres narrados (1 crédito ≈ 1 carácter) ---
+    print("\n[ElevenLabs — voz]")
+    total_chars = 0
+    audio_count = 0
+    if AUDIO_DIR.exists():
+        for audio_file in sorted(AUDIO_DIR.glob("*.mp3")):
+            if audio_file.stem.startswith(NARRATION_SCRATCH_PREFIXES):
+                continue  # temporales/vistas previas, no narraciones finales
+            data = _load_json(SCRIPTS_DIR / f"{audio_file.stem}.json")
+            script_es = data.get("script_es", "")
+            if script_es:
+                total_chars += len(script_es)
+                audio_count += 1
+    if audio_count:
+        credits = total_chars * ELEVENLABS_CREDITS_PER_CHAR
+        print(f"  {audio_count} narración(es) generadas, {total_chars} caracteres en total: "
+              f"~{credits} créditos (≈{ELEVENLABS_CREDITS_PER_CHAR} crédito/carácter con eleven_multilingual_v2)")
+    else:
+        print("  Ninguna narración generada con ElevenLabs todavía.")
+    print("  Cupo/saldo exacto: https://elevenlabs.io/app/subscription")
+
+    # --- Claude (Anthropic): nº de llamadas, sin estimar $ (depende de tokens de imagen+texto) ---
+    print("\n[Claude (Anthropic) — guion y emociones]")
+    script_count = 0
+    emotion_count = 0
+    if SCRIPTS_DIR.exists():
+        for script_path in SCRIPTS_DIR.glob("*.json"):
+            data = _load_json(script_path)
+            if data.get("script_es"):
+                script_count += 1
+            if data.get("emotion_segments"):
+                emotion_count += 1
+    print(f"  {script_count} guion(es) con texto, {emotion_count} clasificación(es) de emoción hechas.")
+    print("  (no se puede estimar el coste en $ desde aquí — depende de tokens de imagen+texto)")
+    print("  Consumo/saldo exacto: https://console.anthropic.com/settings/billing")
 
 
 # ----------------------------------------------------------------------------
@@ -1251,7 +1715,7 @@ def main_menu():
         print("4. Generar un vídeo a partir de imágenes (guion narrado)")
         print("5. Ver / publicar vídeos terminados")
         print("6. Regenerar avatar o recomponer un vídeo ya hecho")
-        print("7. Ver gasto estimado en Replicate")
+        print("7. Ver créditos gastados (Replicate / ElevenLabs / Claude)")
         print("0. Salir")
 
         choice = input("\nElige una opción: ").strip()
