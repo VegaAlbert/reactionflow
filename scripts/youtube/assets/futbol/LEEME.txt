@@ -1,3 +1,12 @@
+VIDEO DE NOTAS DEL GATO (lo normal)
+===================================
+Abre ReactionFlow.bat -> opcion 7 "Video de notas de futbol".
+  1. Eliges equipo (Barca / Madrid) y partido (Enter = el ultimo).
+  2. Claude pone las notas y escribe lo que dice el gato (usa el .env).
+  3. Las revisas: [s] vale, [n] rehacer diciendo que cambiar, [e] editar a mano.
+  4. Se monta el video con la voz del gato (ElevenLabs) en final/futbol_*.mp4.
+     Publicalo con la opcion 4 del menu.
+
 FOTOS DE JUGADORES PARA LOS VIDEOS DE NOTAS DEL GATO
 ====================================================
 

@@ -3,9 +3,16 @@
   "partido": "Sevilla 1-3 FC Barcelona",
   "fecha": "2026-09-19",
   "competicion": "LaLiga · Jornada 7",
-  "marcador": {"local": "sevilla", "visitante": "barca", "goles": [1, 3]},
+  "marcador": {
+    "local": "sevilla",
+    "visitante": "barca",
+    "goles": [
+      1,
+      3
+    ]
+  },
   "fuentes": [
-    "https://www.espn.com/soccer/match/_/gameId/401882859 (alineaciones, eventos, estadísticas y narración minuto a minuto)",
+    "ESPN, evento 401882859 (esp.1)",
     "https://www.fcbarcelona.com/en/news/4578857/sevilla-1-3-fc-barcelona-raphinha-does-it-again",
     "https://www.barcablaugranes.com/cant-del-blog-barcelona-opinion/132993/ratings-vs-sevilla-raphinha-hat-trick-maintains-perfect-start",
     "https://www.si.com/soccer/barcelona-player-ratings-vs-sevilla-historic-raphinha-beyond-messi-level"
@@ -14,14 +21,29 @@
   "formacion": "4-3-3",
   "once": [
     "livakovic",
-    "joao_cancelo", "christensen", "pau_cubarsi", "eric_garcia",
-    "pedri", "rodri", "fermin_lopez",
-    "anthony_gordon", "raphinha", "lamine_yamal"
+    "joao_cancelo",
+    "christensen",
+    "pau_cubarsi",
+    "eric_garcia",
+    "pedri",
+    "rodri",
+    "fermin_lopez",
+    "anthony_gordon",
+    "raphinha",
+    "lamine_yamal"
   ],
   "orden": [
-    "livakovic", "joao_cancelo", "christensen", "pau_cubarsi", "eric_garcia",
-    "rodri", "pedri", "fermin_lopez",
-    "anthony_gordon", "lamine_yamal", "raphinha"
+    "livakovic",
+    "joao_cancelo",
+    "christensen",
+    "pau_cubarsi",
+    "eric_garcia",
+    "rodri",
+    "pedri",
+    "fermin_lopez",
+    "anthony_gordon",
+    "lamine_yamal",
+    "raphinha"
   ],
   "intro": "¡Miau! Sevilla uno, Barça tres, manito. Hat-trick de Raphinha y ocho de ocho, pero ojo, que en la primera parte el Sevilla nos tuvo contra las cuerdas. Aquí no se regala nada: notas duras, uno por uno.",
   "jugadores": {
@@ -82,11 +104,26 @@
     }
   },
   "suplentes": {
-    "adeyemi": {"nota": 6, "datos": "Entró 77'. Desborde, faltas recibidas y tiro parado 90'."},
-    "gerard_martin": {"nota": 6, "datos": "Entró 59' por Christensen. Sin errores."},
-    "dani_olmo": {"nota": 5, "datos": "Entró 76'. Tiro parado 88', poca influencia."},
-    "marc_bernal": {"nota": null, "datos": "Entró 86'. Sin tiempo para nota."},
-    "gabriel_jesus": {"nota": null, "datos": "Entró 86'. Sin tiempo para nota."}
+    "adeyemi": {
+      "nota": 6,
+      "datos": "Entró 77'. Desborde, faltas recibidas y tiro parado 90'."
+    },
+    "gerard_martin": {
+      "nota": 6,
+      "datos": "Entró 59' por Christensen. Sin errores."
+    },
+    "dani_olmo": {
+      "nota": 5,
+      "datos": "Entró 76'. Tiro parado 88', poca influencia."
+    },
+    "marc_bernal": {
+      "nota": null,
+      "datos": "Entró 86'. Sin tiempo para nota."
+    },
+    "gabriel_jesus": {
+      "nota": null,
+      "datos": "Entró 86'. Sin tiempo para nota."
+    }
   },
   "cierre": "Del banquillo: Adeyemi un seis, Gerard Martín un seis y Olmo un cinco. Bernal y Gabriel Jesus, sin tiempo para nota. Tres puntos, pero atrás hay que apretar. ¿Estáis de acuerdo? Os leo en comentarios. ¡Miau!"
 }

@@ -2,6 +2,7 @@
   "equipo": "FC Barcelona",
   "temporada": "2026/27",
   "fuente": "Web oficial: https://www.fcbarcelona.com/es/futbol/primer-equipo/jugadores (septiembre 2026)",
+  "espn_id": 83,
   "jugadores": [
     {
       "id": "joan_garcia",

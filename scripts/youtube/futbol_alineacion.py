@@ -49,7 +49,9 @@ FILAS_Y = {
     3: [1640, 1235, 830, 425],
     4: [1660, 1310, 1000, 690, 380],
 }
-ANCHO_MAX_JUGADOR = 270
+# Ancho máximo de cada foto según las líneas de la formación (sin portero):
+# con 4 líneas (p.ej. 4-2-3-1) hay que encogerlas para que no se pisen.
+ANCHO_MAX_JUGADOR = {3: 270, 4: 222}
 MARGEN_LATERAL = 20
 
 
@@ -96,7 +98,7 @@ def etiqueta_nombre(nombre: str, ancho_max: int) -> Image.Image:
     fuente = fj.cargar_fuente(30)
     caja = fuente.getbbox(nombre)
     w, h = caja[2] - caja[0] + 24, caja[3] - caja[1] + 16
-    while w > ancho_max + 30 and fuente.size > 18:
+    while w > ancho_max + 6 and fuente.size > 16:
         fuente = fj.cargar_fuente(fuente.size - 2)
         caja = fuente.getbbox(nombre)
         w, h = caja[2] - caja[0] + 24, caja[3] - caja[1] + 16
@@ -105,6 +107,18 @@ def etiqueta_nombre(nombre: str, ancho_max: int) -> Image.Image:
     d.rounded_rectangle([0, 0, w - 1, h - 1], radius=8, fill=(18, 90, 45, 225))
     d.text((w / 2, h / 2), nombre, font=fuente, fill="white", anchor="mm")
     return img
+
+
+def silueta(config: dict) -> Image.Image:
+    """Figura gris genérica, con la elipse, para jugadores sin foto (p.ej. un
+    canterano que no está en la plantilla)."""
+    ancho, alto = config["lienzo"]["ancho"], config["lienzo"]["alto"]
+    img = Image.new("RGBA", (ancho, alto), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    gris = (70, 78, 88, 235)
+    d.ellipse([ancho / 2 - 95, 50, ancho / 2 + 95, 270], fill=gris)
+    d.rounded_rectangle([ancho / 2 - 215, 300, ancho / 2 + 215, alto + 80], radius=120, fill=gris)
+    return Image.alpha_composite(img, fj.cargar_elipse(config))
 
 
 def resplandor(foto: Image.Image, color=(255, 205, 40)) -> Image.Image:
@@ -146,7 +160,7 @@ def componer(
 ) -> Image.Image:
     config = fj.load_config()
     equipo = datos["equipo"]
-    plantilla = fj.load_plantilla(equipo)
+    nombres = {j["id"]: j["nombre"] for j in fj.load_plantilla(equipo)["jugadores"]}
     notas = datos.get("notas", {}) if con_notas else {}
     lineas = partir_en_lineas(datos["once"], datos.get("formacion", "4-3-3"))
     filas_y = FILAS_Y.get(len(lineas) - 1)
@@ -156,15 +170,19 @@ def componer(
     lienzo = cargar_fondo()
     for linea, cy in zip(lineas, filas_y):
         n = len(linea)
-        w = min(ANCHO_MAX_JUGADOR, (ANCHO - 2 * MARGEN_LATERAL) // n)
+        w = min(ANCHO_MAX_JUGADOR[len(lineas) - 1], (ANCHO - 2 * MARGEN_LATERAL) // n)
         h = round(w * config["lienzo"]["alto"] / config["lienzo"]["ancho"])
         hueco = (ANCHO - 2 * MARGEN_LATERAL - n * w) / (n + 1)
         for k, jugador_id in enumerate(linea):
-            j = fj.buscar_jugador(plantilla, jugador_id)
+            nombre_jugador = nombres.get(jugador_id) or datos.get("extras", {}).get(jugador_id, {}).get("nombre")
+            if not nombre_jugador:
+                sys.exit(f"'{jugador_id}' no está en la plantilla de {equipo} ni en \"extras\".")
             ruta = fj.FUTBOL_DIR / equipo / f"{jugador_id}.png"
-            if not ruta.exists():
-                sys.exit(f"Falta la foto {ruta}. Ejecuta futbol_jugadores.py preparar --equipo {equipo}.")
-            foto = Image.open(ruta).convert("RGBA")
+            if ruta.exists():
+                foto = Image.open(ruta).convert("RGBA")
+            else:
+                print(f"⚠ Sin foto de {nombre_jugador}: uso una silueta.")
+                foto = silueta(config)
             if jugador_id in notas:
                 foto = fj.pintar_nota(foto, float(notas[jugador_id]), config)
             foto = foto.resize((w, h), Image.LANCZOS)
@@ -173,7 +191,7 @@ def componer(
             if jugador_id == destacado:
                 lienzo.alpha_composite(resplandor(foto), (x, y))
             lienzo.alpha_composite(foto, (x, y))
-            nombre = etiqueta_nombre(j["nombre"], w)
+            nombre = etiqueta_nombre(nombre_jugador, w)
             lienzo.alpha_composite(nombre, (x + (w - nombre.width) // 2, y + h + 4))
 
     if datos.get("marcador"):
