@@ -1,0 +1,16 @@
+{
+  "equipo": "barca",
+  "partido": "Ejemplo (notas inventadas para probar)",
+  "formacion": "4-3-3",
+  "once": [
+    "joan_garcia",
+    "alex_balde", "pau_cubarsi", "eric_garcia", "jules_kounde",
+    "pedri", "frenkie_de_jong", "fermin_lopez",
+    "raphinha", "gabriel_jesus", "lamine_yamal"
+  ],
+  "notas": {
+    "joan_garcia": 7, "alex_balde": 6.5, "pau_cubarsi": 8, "eric_garcia": 6,
+    "jules_kounde": 7, "pedri": 8.5, "frenkie_de_jong": 7.5, "fermin_lopez": 7,
+    "raphinha": 8, "gabriel_jesus": 6, "lamine_yamal": 9.5
+  }
+}

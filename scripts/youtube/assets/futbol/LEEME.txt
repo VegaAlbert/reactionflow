@@ -1,0 +1,35 @@
+FOTOS DE JUGADORES PARA LOS VIDEOS DE NOTAS DEL GATO
+====================================================
+
+0) Lo normal: bajar las fotos oficiales de la web del club (PNG ya
+   recortados con el mismo encuadre que la foto de ejemplo):
+     python futbol_jugadores.py descargar --equipo barca
+   Cada jugador tiene en plantilla.json el enlace "ficha" a su pagina.
+
+1) Si un jugador no tiene foto oficial, pon una foto de cada jugador en <equipo>/originales/ con el nombre
+   del "id" de plantilla.json (ej: barca/originales/pedri.jpg).
+   - Vale jpg, png o webp, con fondo o sin fondo.
+   - De frente y que se vea desde la cabeza hasta la cintura/cadera
+     (como la foto oficial del club), si no la elipse quedara flotando.
+   - Cuanto mas grande mejor (la cara, al menos ~120 px de ancho).
+
+2) Desde scripts/youtube:
+     python futbol_jugadores.py estado   --equipo barca
+     python futbol_jugadores.py preparar --equipo barca
+   Resultado: barca/<id>.png (670x790, fondo transparente, elipse vacia)
+              barca/sin_elipse/<id>.png
+
+3) Probar una nota:
+     python futbol_jugadores.py nota --equipo barca --jugador pedri --nota 7.5
+
+La elipse (elipse.png) y su posicion estan en config.json y son las
+mismas para todos los jugadores. La cara de cada jugador se detecta y se
+escala/coloca siempre igual que en la foto de ejemplo de Pau Cubarsi.
+fondos/  -> campo.png, el fondo de las alineaciones (1080x1920)
+escudos/ -> escudos de los clubes: barca.png, madrid.png (1000 px de alto,
+           fondo transparente) y el .svg original para exportar a
+           cualquier tamano.
+
+madrid/plantilla.json lleva un "encuadre" fijo porque todas las fotos
+oficiales de realmadrid.com (1500x2000) estan hechas con el mismo
+encuadre; asi todos los jugadores quedan a la misma escala.
