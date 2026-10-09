@@ -45,13 +45,14 @@ ESCUDOS_DIR = fj.FUTBOL_DIR / "escudos"
 
 # Centro vertical de cada línea (portero abajo, delantera arriba) según
 # cuántas líneas tenga la formación (sin contar al portero).
+# Abajo queda libre una franja (y > ~1690) para los subtítulos del vídeo.
 FILAS_Y = {
-    3: [1640, 1235, 830, 425],
-    4: [1660, 1310, 1000, 690, 380],
+    3: [1480, 1120, 765, 410],
+    4: [1480, 1200, 920, 640, 360],
 }
 # Ancho máximo de cada foto según las líneas de la formación (sin portero):
 # con 4 líneas (p.ej. 4-2-3-1) hay que encogerlas para que no se pisen.
-ANCHO_MAX_JUGADOR = {3: 270, 4: 222}
+ANCHO_MAX_JUGADOR = {3: 255, 4: 200}
 MARGEN_LATERAL = 20
 
 
