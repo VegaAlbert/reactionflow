@@ -61,17 +61,22 @@ PAUSA_ENTRE_FRASES = 0.45   # s de silencio entre un jugador y el siguiente
 NOTA_ANTES_DEL_FINAL = 0.9  # s antes de acabar su frase aparece la nota (la dice al final)
 FINAL_EXTRA = 1.5           # s de imagen final tras la última palabra
 
-# Gato: recorte del sprite (2048x2048) al área que ocupa el gato, y tamaño y
-# margen en el vídeo final (abajo a la derecha, junto al portero).
-GATO_RECORTE = (291, 335, 1460, 1383)  # x, y, ancho, alto
+# Gato: tamaño y margen en el vídeo final (abajo a la derecha, junto al
+# portero). El recorte del sprite al área que ocupa el gato se mide en las
+# propias imágenes de assets/avatar (ver recorte_gato), así vale para sprites
+# de cualquier tamaño.
 GATO_ANCHO = 370
 GATO_MARGEN = 12
 
 
 def run(cmd: list) -> None:
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if result.returncode != 0:
-        sys.exit(f"[ERROR] {' '.join(map(str, cmd[:3]))}...: {result.stderr[-800:]}")
+        # Las líneas con la causa real suelen quedar lejos del final del log.
+        causas = [l for l in result.stderr.splitlines() if any(
+            k in l for k in ("Error", "Invalid", "No such", "not found", "Failed", "Unable")
+        )]
+        sys.exit(f"[ERROR] {' '.join(map(str, cmd[:3]))}...:\n" + "\n".join(causas[:8] or [result.stderr[-800:]]))
 
 
 # ----------------------------------------------------------------------------
@@ -201,14 +206,40 @@ def animar_gato(narracion: Path, tmp: Path) -> Path:
     return salida
 
 
+def recorte_gato() -> str:
+    """Filtro crop de ffmpeg con el rectángulo que ocupa el gato en sus
+    sprites (unión de todos, sin el fondo verde), en proporción al tamaño de
+    la imagen (iw/ih) para que no dependa de la resolución de los sprites."""
+    from PIL import Image
+
+    # Solo los sprites que usa la animación (gato_perfil.png no, y además
+    # tiene sombras en el fondo verde).
+    usados = {v for k, v in vars(ca).items() if k.startswith("SPRITE_") and "PERFIL" not in k and isinstance(v, str)}
+    caja = None
+    for sprite in sorted(ca.AVATAR_DIR / u for u in usados if (ca.AVATAR_DIR / u).exists()):
+        img = np.asarray(Image.open(sprite).convert("RGB")).astype(int)
+        verde = (img[..., 1] > 150) & (img[..., 0] < 120) & (img[..., 2] < 120)
+        ys, xs = np.nonzero(~verde)
+        if xs.size == 0:
+            continue
+        alto, ancho = verde.shape
+        c = (xs.min() / ancho, ys.min() / alto, (xs.max() + 1) / ancho, (ys.max() + 1) / alto)
+        caja = c if caja is None else (min(caja[0], c[0]), min(caja[1], c[1]), max(caja[2], c[2]), max(caja[3], c[3]))
+    if caja is None:
+        return "null"
+    margen = 0.01
+    x0, y0 = max(0.0, caja[0] - margen), max(0.0, caja[1] - margen)
+    x1, y1 = min(1.0, caja[2] + margen), min(1.0, caja[3] + margen)
+    return f"crop=iw*{x1 - x0:.4f}:ih*{y1 - y0:.4f}:iw*{x0:.4f}:ih*{y0:.4f}"
+
+
 def componer_video(escenas: Path, gato: Path, narracion: Path, salida: Path) -> None:
-    x, y, w, h = GATO_RECORTE
     chroma = f"colorkey={ca.CHROMA_COLOR}:{ca.CHROMA_SIMILARITY}:{ca.CHROMA_BLEND}"
     if ca.USE_DESPILL:
         chroma += ",despill=type=green:mix=0.5:expand=0"
     filtro = (
         f"[0:v]fps={FPS},format=yuv420p[fondo];"
-        f"[1:v]crop={w}:{h}:{x}:{y},{chroma},scale={GATO_ANCHO}:-1[gato];"
+        f"[1:v]{recorte_gato()},{chroma},scale={GATO_ANCHO}:-2[gato];"
         f"[fondo][gato]overlay=W-w-{GATO_MARGEN}:H-h-{GATO_MARGEN}:shortest=1[v]"
     )
     run([
