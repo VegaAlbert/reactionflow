@@ -58,7 +58,7 @@ INTRO_CLIPS_DIR = Path("./assets/gato_intros")
 FPS = 30
 SAMPLE_RATE = 44100
 PAUSA_ENTRE_FRASES = 0.45   # s de silencio entre un jugador y el siguiente
-NOTA_ANTES_DEL_FINAL = 0.9  # s antes de acabar su frase aparece la nota (la dice al final)
+NOTA_ANTES_DEL_FINAL = 0.9  # si no hay whisper: s antes de acabar la frase aparece la nota
 FINAL_EXTRA = 1.5           # s de imagen final tras la última palabra
 
 # Gato: tamaño y margen en el vídeo final (abajo a la derecha, junto al
@@ -66,6 +66,16 @@ FINAL_EXTRA = 1.5           # s de imagen final tras la última palabra
 # propias imágenes de assets/avatar (ver recorte_gato), así vale para sprites
 # de cualquier tamaño.
 GATO_ANCHO = 370
+
+# Subtítulos: abajo a la izquierda, en la franja libre bajo el portero y al
+# lado del gato (MarginR deja sitio al gato).
+SUB_FUENTE = "Arial"
+SUB_TAMANO = 58
+SUB_MARGEN_IZQ = 30
+SUB_MARGEN_DER = GATO_ANCHO + 40
+SUB_MARGEN_ABAJO = 60
+SUB_MAX_PALABRAS = 4
+SUB_MAX_CARACTERES = 22
 GATO_MARGEN = 12
 
 
@@ -154,11 +164,72 @@ def montar_narracion(audios: list[Path], tmp: Path, con_miau: bool) -> tuple[Pat
 
 
 # ----------------------------------------------------------------------------
-# 2) Imágenes de la alineación
+# 2) Tiempos de cada palabra: subtítulos y momento exacto de la nota
 # ----------------------------------------------------------------------------
 
 
-def montar_imagenes(partido: dict, tramos: list, duracion: float, tmp: Path) -> Path:
+def tiempos_palabras(frases: list[tuple[str, str]], narracion: Path, tramos: list) -> list[list]:
+    """Para cada frase, [(palabra, inicio, fin), ...] en segundos de la
+    narración. Usa faster-whisper si está instalado (tiempos reales) y, si
+    no, reparte el tiempo de cada frase según la longitud de las palabras."""
+    whisper = ca.transcribe_words_whisper(narracion)
+    if whisper is None:
+        print("   [AVISO] faster-whisper no está instalado: subtítulos con tiempos aproximados.")
+    resultado = []
+    for (_, texto), (inicio, fin) in zip(frases, tramos):
+        palabras = texto.split()
+        tiempos = []
+        if whisper:
+            cerca = [w for w in whisper if inicio - 0.3 <= w[1] <= fin + 0.3]
+            tiempos = ca.align_script_to_timestamps(palabras, cerca) if cerca else []
+        if not tiempos:
+            tiempos = [(w, a + inicio, b + inicio) for w, a, b in ca.proportional_fallback_timing(palabras, fin - inicio)]
+        resultado.append(tiempos)
+    return resultado
+
+
+def momento_nota(tiempos: list, fin: float) -> float:
+    """Cuándo dice el gato la nota: la frase acaba en "Un seis y medio.",
+    así que es el inicio del último "un"."""
+    for palabra, inicio, _ in reversed(tiempos):
+        if ca.normalize_word(palabra) == "un":
+            return max(0.0, inicio - 0.05)
+    return fin - NOTA_ANTES_DEL_FINAL
+
+
+def escribir_subtitulos(tiempos_por_frase: list[list], ruta: Path) -> Path:
+    ca.SUB_MAX_WORDS_PER_CUE, ca.SUB_MAX_CHARS_PER_CUE = SUB_MAX_PALABRAS, SUB_MAX_CARACTERES
+    cabecera = f"""[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 0
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,{SUB_FUENTE},{SUB_TAMANO},&H00FFFFFF,&H000000FF,&H00101010,&H00000000,1,0,0,0,100,100,0,0,1,5,0,2,{SUB_MARGEN_IZQ},{SUB_MARGEN_DER},{SUB_MARGEN_ABAJO},1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+"""
+    with open(ruta, "w", encoding="utf-8") as f:
+        f.write(cabecera)
+        for tiempos in tiempos_por_frase:  # por frase, para no mezclar dos jugadores
+            for inicio, fin, texto in ca.group_into_cues(tiempos):
+                f.write(
+                    f"Dialogue: 0,{ca.format_ass_timestamp(inicio)},{ca.format_ass_timestamp(fin)},"
+                    f"Default,,0,0,0,,{texto.upper()}\n"
+                )
+    return ruta
+
+
+# ----------------------------------------------------------------------------
+# 3) Imágenes de la alineación
+# ----------------------------------------------------------------------------
+
+
+def montar_imagenes(partido: dict, tramos: list, notas_en: list[float], duracion: float, tmp: Path) -> Path:
     """Genera los fotogramas fijos y la lista para el demuxer concat de ffmpeg
     (imagen + cuánto dura en pantalla)."""
     notas = {k: v["nota"] for k, v in partido["jugadores"].items()}
@@ -178,7 +249,7 @@ def montar_imagenes(partido: dict, tramos: list, duracion: float, tmp: Path) -> 
     for i, jugador in enumerate(orden):
         inicio, fin = tramos[i + 1]
         siguiente = tramos[i + 2][0]
-        escena(f"{jugador}_a", orden[:i], jugador, max(inicio + 0.5, fin - NOTA_ANTES_DEL_FINAL))
+        escena(f"{jugador}_a", orden[:i], jugador, min(fin, max(inicio + 0.5, notas_en[i])))
         escena(f"{jugador}_b", orden[: i + 1], jugador, siguiente)
     escena("final", orden, None, duracion)
 
@@ -193,7 +264,7 @@ def montar_imagenes(partido: dict, tramos: list, duracion: float, tmp: Path) -> 
 
 
 # ----------------------------------------------------------------------------
-# 3) Gato + composición final
+# 4) Gato + composición final
 # ----------------------------------------------------------------------------
 
 
@@ -233,14 +304,15 @@ def recorte_gato() -> str:
     return f"crop=iw*{x1 - x0:.4f}:ih*{y1 - y0:.4f}:iw*{x0:.4f}:ih*{y0:.4f}"
 
 
-def componer_video(escenas: Path, gato: Path, narracion: Path, salida: Path) -> None:
+def componer_video(escenas: Path, gato: Path, narracion: Path, subtitulos: Path, salida: Path) -> None:
     chroma = f"colorkey={ca.CHROMA_COLOR}:{ca.CHROMA_SIMILARITY}:{ca.CHROMA_BLEND}"
     if ca.USE_DESPILL:
         chroma += ",despill=type=green:mix=0.5:expand=0"
     filtro = (
         f"[0:v]fps={FPS},format=yuv420p[fondo];"
         f"[1:v]{recorte_gato()},{chroma},scale={GATO_ANCHO}:-2[gato];"
-        f"[fondo][gato]overlay=W-w-{GATO_MARGEN}:H-h-{GATO_MARGEN}:shortest=1[v]"
+        f"[fondo][gato]overlay=W-w-{GATO_MARGEN}:H-h-{GATO_MARGEN}:shortest=1[comp];"
+        f"[comp]subtitles='{ca.escape_for_filter(subtitulos.resolve())}'[v]"
     )
     run([
         "ffmpeg", "-y",
@@ -282,18 +354,22 @@ def main():
     frases.append(("cierre", partido["cierre"]))
 
     print(f"{partido.get('partido', nombre)}: {len(frases)} frases")
-    print("1/4 Voz del gato...")
+    print("1/5 Voz del gato...")
     audios = generar_voz(frases, tmp / ("voz_prueba" if args.voz_prueba else "voz"), args.voz_prueba, args.rehacer_voz)
     narracion, tramos = montar_narracion(audios, tmp, con_miau=not args.sin_miau)
     duracion = tramos[-1][1] + FINAL_EXTRA
     print(f"   Duración: {duracion:.1f} s")
 
-    print("2/4 Alineaciones con las notas...")
-    escenas = montar_imagenes(partido, tramos, duracion, tmp)
-    print("3/4 Animando al gato...")
+    print("2/5 Subtítulos (whisper)...")
+    tiempos = tiempos_palabras(frases, narracion, tramos)
+    subtitulos = escribir_subtitulos(tiempos, tmp / "subtitulos.ass")
+    notas_en = [momento_nota(t, fin) for t, (_, fin) in zip(tiempos[1:-1], tramos[1:-1])]
+    print("3/5 Alineaciones con las notas...")
+    escenas = montar_imagenes(partido, tramos, notas_en, duracion, tmp)
+    print("4/5 Animando al gato...")
     gato = animar_gato(narracion, tmp)
-    print("4/4 Montando el vídeo...")
-    componer_video(escenas, gato, narracion, salida)
+    print("5/5 Montando el vídeo...")
+    componer_video(escenas, gato, narracion, subtitulos, salida)
     print(f"Vídeo listo: {salida}")
 
 
