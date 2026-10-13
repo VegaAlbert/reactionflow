@@ -57,9 +57,11 @@ INTRO_CLIPS_DIR = Path("./assets/gato_intros")
 
 FPS = 30
 SAMPLE_RATE = 44100
-PAUSA_ENTRE_FRASES = 0.45   # s de silencio entre un jugador y el siguiente
+PAUSA_ENTRE_FRASES = 0.2    # s de silencio entre un jugador y el siguiente
 NOTA_ANTES_DEL_FINAL = 0.9  # si no hay whisper: s antes de acabar la frase aparece la nota
-FINAL_EXTRA = 1.5           # s de imagen final tras la última palabra
+FINAL_EXTRA = 1.0           # s de imagen final tras la última palabra
+DURACION_MAXIMA = 60.0      # s: si la voz pasa de aquí, se acelera (sin cambiar el tono)...
+ACELERACION_MAXIMA = 1.3    # ...como mucho hasta este factor
 
 # Gato: tamaño y margen en el vídeo final (abajo a la derecha, junto al
 # portero). El recorte del sprite al área que ocupa el gato se mide en las
@@ -161,6 +163,20 @@ def montar_narracion(audios: list[Path], tmp: Path, con_miau: bool) -> tuple[Pat
         wf.setframerate(SAMPLE_RATE)
         wf.writeframes(np.concatenate(partes).tobytes())
     return salida, tramos
+
+
+def acelerar(narracion: Path, tramos: list, duracion: float, tmp: Path) -> tuple[Path, list, float]:
+    """Acelera la voz (atempo mantiene el tono) para que el vídeo no pase de
+    DURACION_MAXIMA. Si haría falta más de ACELERACION_MAXIMA, se queda ahí y
+    avisa: los textos son demasiado largos."""
+    factor = min(ACELERACION_MAXIMA, duracion / (DURACION_MAXIMA - 0.3))
+    rapida = tmp / "narracion_rapida.wav"
+    run(["ffmpeg", "-y", "-i", str(narracion), "-filter:a", f"atempo={factor:.4f}", str(rapida)])
+    duracion /= factor
+    print(f"   Voz acelerada x{factor:.2f} para que dure {duracion:.1f} s.")
+    if duracion > DURACION_MAXIMA + 0.5:
+        print(f"   [AVISO] Aun así pasa de {DURACION_MAXIMA:.0f} s: acorta los textos del gato.")
+    return rapida, [(a / factor, b / factor) for a, b in tramos], duracion
 
 
 # ----------------------------------------------------------------------------
@@ -358,6 +374,8 @@ def main():
     audios = generar_voz(frases, tmp / ("voz_prueba" if args.voz_prueba else "voz"), args.voz_prueba, args.rehacer_voz)
     narracion, tramos = montar_narracion(audios, tmp, con_miau=not args.sin_miau)
     duracion = tramos[-1][1] + FINAL_EXTRA
+    if duracion > DURACION_MAXIMA:
+        narracion, tramos, duracion = acelerar(narracion, tramos, duracion, tmp)
     print(f"   Duración: {duracion:.1f} s")
 
     print("2/5 Subtítulos (whisper)...")

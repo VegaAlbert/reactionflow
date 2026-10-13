@@ -253,14 +253,17 @@ CRITERIO DE NOTAS (obligatorio):
   errores en goles, tiros, ocasiones falladas, paradas, faltas, lesiones, crónica).
   No inventes jugadas ni datos que no estén en los datos.
 
-ESTILO DEL GATO:
-- Español, vocabulario juvenil y con gracia, frases cortas; puede decir "manito".
-- Cada texto de jugador: 25 a 45 palabras, dice por qué y TERMINA SIEMPRE con la nota
-  en palabras, así: "Un seis." / "Un cuatro y medio." / "Un nueve y medio."
+ESTILO DEL GATO (el vídeo entero dura COMO MÁXIMO 1 MINUTO, sé muy breve):
+- Español, vocabulario juvenil y con gracia; puede decir "manito".
+- Cada texto de jugador: UNA sola frase de 8 a 14 palabras con el dato clave que
+  justifica la nota, y TERMINA SIEMPRE con la nota en palabras, así: "Un seis." /
+  "Un cuatro y medio." / "Un nueve y medio." Ejemplo: "Gordon, tres tiros y
+  ninguno a puerta, manito. Un cuatro y medio."
 - Los números del texto en palabras (se leen en voz alta): "cincuenta y dos", no "52".
-- Intro: CORTA, 10 a 18 palabras como máximo: empieza con "¡Miau!", resultado y una idea del partido.
-- Cierre: nota de los suplentes que jugaron 15 minutos o más, los demás "sin tiempo
-  para nota", una conclusión y pide opinión en comentarios. Termina con "¡Miau!".
+- Intro: 5 a 10 palabras: empieza con "¡Miau!" y el resultado.
+- Cierre: 12 a 22 palabras: nota de los suplentes que jugaron 15 minutos o más (los
+  demás ni se mencionan), pide opinión en comentarios y termina con "¡Miau!".
+- En "datos" sí puedes detallar todos los hechos que justifican la nota.
 {estilo}
 DATOS DEL PARTIDO (JSON):
 {datos}
