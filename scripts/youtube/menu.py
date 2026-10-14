@@ -309,6 +309,12 @@ def write_own_script(stem: str, video_path: Path, duration: float):
 PREVIEW_AUDIO_PATH = Path("./_preview_audio.mp3")
 
 
+# ¿Revisar cada audio (escucharlo y aprobarlo) antes de montar el vídeo? Se
+# pregunta una sola vez por vídeo, la primera vez que hace falta un audio;
+# el menú principal lo vuelve a dejar en None antes de cada opción.
+REVISAR_AUDIOS = None
+
+
 def preview_and_confirm_audio(script_text: str, duration: float,
                                save_audio_to: Path | None = None,
                                voice_id_override: str | None = None) -> str:
@@ -326,6 +332,13 @@ def preview_and_confirm_audio(script_text: str, duration: float,
     import shutil
     import text_to_speech
 
+    global REVISAR_AUDIOS
+    if REVISAR_AUDIOS is None:
+        REVISAR_AUDIOS = ask_yes_no(
+            "\n  ¿Quieres revisar los audios uno a uno antes de montar el vídeo? [s/N]: ",
+            default=False,
+        )
+
     try:
         client, voice_id = text_to_speech.get_elevenlabs_client()
     except SystemExit as e:
@@ -334,6 +347,18 @@ def preview_and_confirm_audio(script_text: str, duration: float,
         return script_text
     if voice_id_override:
         voice_id = voice_id_override
+
+    if not REVISAR_AUDIOS:
+        # Sin revisión: si el llamador quiere el audio ya hecho, se genera
+        # directamente en su sitio (una sola llamada a ElevenLabs, igual que
+        # cuando se aprueba la vista previa); si no, solo se devuelve el texto.
+        if save_audio_to is not None:
+            save_audio_to.parent.mkdir(parents=True, exist_ok=True)
+            print("  Generando audio...")
+            if not text_to_speech.generate_speech(client, voice_id, script_text, save_audio_to):
+                play_error_sound()
+                print("  No se pudo generar el audio.")
+        return script_text
 
     while True:
         print("\n  Generando un audio de prueba para comprobar cómo suena...")
@@ -1797,6 +1822,9 @@ def main_menu():
         print("0. Salir")
 
         choice = input("\nElige una opción: ").strip()
+
+        global REVISAR_AUDIOS
+        REVISAR_AUDIOS = None  # cada vídeo nuevo vuelve a preguntar si revisar los audios
 
         try:
             if choice == "1":
