@@ -1,0 +1,44 @@
+SHORT: ELECCIONES GENERALES 29N (unos 55 segundos)
+===================================================
+Cómo hacerlo con ReactionFlow (opción 4 del menú):
+  1. Copia las 7 imágenes (1.png ... 7.png) de esta carpeta a scripts\youtube\imagen_video
+     (deja esa carpeta solo con estas 7, el orden sale del número del nombre).
+  2. ReactionFlow -> opción 4.
+  3. Título en pantalla: "Elecciones 29N en 1 minuto" (o Enter para ninguno).
+  4. Para cada imagen pega su NARRACIÓN de abajo.
+     En "Texto en pantalla" pulsa Enter: las imágenes ya llevan el texto.
+El "Miau" del principio lo pone el programa solo, por eso la narración 1 no lo lleva.
+
+Datos a 14 de octubre de 2026. Si lo publicas más tarde, revisa las encuestas.
+
+---------------------------------------------------
+1.png  (portada 29N)
+NARRACIÓN: España vuelve a votar: elecciones generales el veintinueve de noviembre. Te lo cuento en un minuto.
+
+2.png  (¿por qué ahora?)
+NARRACIÓN: ¿Por qué ahora? El Congreso tumbó los decretos de vivienda del Gobierno, Junts votó con PP y Vox, y Sánchez convocó elecciones.
+
+3.png  (candidatos)
+NARRACIÓN: Los candidatos: Feijóo, Sánchez, Abascal, Ada Colau e Irene Montero.
+
+4.png  (encuestas privadas)
+NARRACIÓN: Las encuestas privadas dan ganador al PP, y PP y Vox juntos pasarían de los ciento setenta y seis escaños de la mayoría absoluta.
+
+5.png  (CIS)
+NARRACIÓN: Pero el CIS pone primero al PSOE, con un treinta y cuatro por ciento. Ni el gato de Schrödinger lo tiene tan claro.
+
+6.png  (calendario)
+NARRACIÓN: Campaña del trece al veintisiete, reflexión el veintiocho, y el veintinueve votas de nueve de la mañana a ocho de la tarde.
+
+7.png  (¿vas a votar?)
+NARRACIÓN: ¿Y tú, vas a votar? Te leo en comentarios. ¡Miau!
+
+---------------------------------------------------
+FUENTES
+- Convocatoria: La Moncloa, 5 oct 2026 (BOE 6 oct). Calendario y censo: guía 29N del Ministerio del Interior.
+- Encuestas privadas: SocioMétrica/El Español (10-11 oct), Sigma Dos/El Mundo (11 oct), GAD3/ABC (12 oct).
+  Escaños: PP 133-141, PSOE 103-107, Vox 64-68; PP+Vox 198-205.
+- CIS barómetro de octubre 2026: PSOE 34 %, PP 22,2 %, Vox 17,1 %.
+- Candidaturas: Wikipedia "Elecciones generales de España de 2026".
+Ojo: a partir del 24 de noviembre la ley prohíbe publicar encuestas en España
+(incluido un vídeo con las tarjetas 4 y 5).
