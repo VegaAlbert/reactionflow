@@ -254,11 +254,12 @@ CRITERIO DE NOTAS (obligatorio):
   No inventes jugadas ni datos que no estén en los datos.
 
 ESTILO DEL GATO (el vídeo entero dura COMO MÁXIMO 1 MINUTO, sé muy breve):
-- Español, vocabulario juvenil y con gracia; puede decir "manito".
+- Español, vocabulario juvenil y con gracia, pero NO digas "manito" (aunque salga en
+  los ejemplos de estilo) ni repitas la misma muletilla: varía las expresiones.
 - Cada texto de jugador: UNA sola frase de 8 a 14 palabras con el dato clave que
   justifica la nota, y TERMINA SIEMPRE con la nota en palabras, así: "Un seis." /
   "Un cuatro y medio." / "Un nueve y medio." Ejemplo: "Gordon, tres tiros y
-  ninguno a puerta, manito. Un cuatro y medio."
+  ninguno a puerta. Un cuatro y medio."
 - Los números del texto en palabras (se leen en voz alta): "cincuenta y dos", no "52".
 - Intro: 5 a 10 palabras: empieza con "¡Miau!" y el resultado.
 - Cierre: 12 a 22 palabras: nota de los suplentes que jugaron 15 minutos o más (los
@@ -276,6 +277,17 @@ Responde SOLO con un JSON válido, sin texto antes ni después, con esta forma:
   "cierre": "..."
 }}
 Usa exactamente los "id" de los datos. En "jugadores" van los {n} titulares, todos."""
+
+
+def sin_manito(texto: str) -> str:
+    """Quita la muletilla "manito" si Claude la cuela igualmente (sale en los
+    ejemplos de style_profile.json y en el vídeo cansaba)."""
+    texto = re.sub(r",?\s*\bmanito\b\s*,?", lambda m: "," if m.group().strip().startswith(",") and m.group().strip().endswith(",") else "", texto, flags=re.I)
+    texto = re.sub(r"\s+([.,!?])", r"\1", texto)
+    texto = re.sub(r"([¡¿])\s+", r"\1", texto)
+    texto = re.sub(r"\s{2,}", " ", texto).strip()
+    # Mayúscula al inicio de frase si "manito" iba delante.
+    return re.sub(r"(^|[.!?]\s+[¡¿]?)([a-záéíóúñ])", lambda m: m.group(1) + m.group(2).upper(), texto)
 
 
 def pedir_notas(datos: dict, equipo_nombre: str, anterior: dict | None, motivo: str | None) -> dict:
@@ -318,6 +330,9 @@ def pedir_notas(datos: dict, equipo_nombre: str, anterior: dict | None, motivo: 
                 raise ValueError(f"faltan titulares: {faltan}")
             for j in resultado["jugadores"].values():
                 j["nota"] = round(float(j["nota"]) * 2) / 2
+                j["texto"] = sin_manito(j["texto"])
+            resultado["intro"] = sin_manito(resultado["intro"])
+            resultado["cierre"] = sin_manito(resultado["cierre"])
             return resultado
         except (ValueError, KeyError) as e:
             print(f"  Respuesta no válida de Claude ({e}), reintentando ({intento + 1}/3)...")
