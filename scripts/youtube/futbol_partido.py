@@ -28,7 +28,6 @@ import unicodedata
 import urllib.request
 from pathlib import Path
 
-from dotenv import load_dotenv
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -291,10 +290,9 @@ def sin_manito(texto: str) -> str:
 
 
 def pedir_notas(datos: dict, equipo_nombre: str, anterior: dict | None, motivo: str | None) -> dict:
-    load_dotenv()
-    api_key = os.getenv("ANTHROPIC_API_KEY")
-    if not api_key:
-        sys.exit("Falta ANTHROPIC_API_KEY en el .env. Revisa .env.example.")
+    import entorno
+
+    api_key = entorno.clave("ANTHROPIC_API_KEY")
     import anthropic
     import generate_script as gs
 

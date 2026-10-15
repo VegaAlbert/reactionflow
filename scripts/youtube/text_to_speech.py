@@ -86,6 +86,8 @@ def save_log(log: dict) -> None:
 
 def get_elevenlabs_client():
     load_dotenv()
+    import entorno  # además del load_dotenv: .env en UTF-16 o variables vacías de Windows
+    entorno.cargar_env()
     api_key = os.getenv("ELEVENLABS_API_KEY")
     voice_id = os.getenv("ELEVENLABS_VOICE_ID")
 

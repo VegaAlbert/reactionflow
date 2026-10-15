@@ -94,6 +94,8 @@ def save_log(log: dict) -> None:
 
 def get_replicate_client():
     load_dotenv()
+    import entorno  # además del load_dotenv: .env en UTF-16 o variables vacías de Windows
+    entorno.cargar_env()
     api_token = os.getenv("REPLICATE_API_TOKEN")
     if not api_token:
         sys.exit(

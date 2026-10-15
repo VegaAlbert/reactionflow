@@ -363,6 +363,10 @@ def main():
     args = parser.parse_args()
 
     load_dotenv()
+
+    import entorno  # además del load_dotenv: .env en UTF-16 o variables vacías de Windows
+
+    entorno.cargar_env()
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key and not args.dry_run:
         sys.exit("Falta ANTHROPIC_API_KEY en el .env. Revisa .env.example.")
