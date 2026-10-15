@@ -43,3 +43,9 @@ scripts/youtube/assets/futbol/*/notas/
 
 # Audios y fotogramas temporales de futbol_video.py
 scripts/youtube/futbol_tmp/
+
+# Escudos de rivales que futbol_partido.py descarga solo al generar un partido:
+# cada ordenador se los baja cuando los necesita (si se subieran, chocarían
+# con el que ya se descargó en el otro ordenador al hacer git pull).
+# Los que ya están en el repositorio siguen versionados.
+scripts/youtube/assets/futbol/escudos/*.png
