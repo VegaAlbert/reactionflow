@@ -895,6 +895,10 @@ def review_and_maybe_regenerate_script(stem: str, video_path: Path, data: dict,
         from dotenv import load_dotenv
 
         load_dotenv()
+
+        import entorno  # además del load_dotenv: .env en UTF-16 o variables vacías de Windows
+
+        entorno.cargar_env()
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
             print("  Falta ANTHROPIC_API_KEY en el .env.")

@@ -53,6 +53,8 @@ ELEVENLABS_MODEL = "eleven_v3"
 
 def main():
     load_dotenv()
+    import entorno  # además del load_dotenv: .env en UTF-16 o variables vacías de Windows
+    entorno.cargar_env()
     api_key = os.getenv("ELEVENLABS_API_KEY")
     voice_id = os.getenv("ELEVENLABS_VOICE_ID")
 

@@ -119,6 +119,8 @@ def save_downloaded_log(log: dict) -> None:
 
 def get_youtube_client():
     load_dotenv()
+    import entorno  # además del load_dotenv: .env en UTF-16 o variables vacías de Windows
+    entorno.cargar_env()
     api_key = os.getenv("YOUTUBE_API_KEY")
     if not api_key:
         sys.exit(
