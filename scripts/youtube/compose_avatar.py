@@ -487,7 +487,19 @@ def transcribe_words_whisper(audio_path: Path):
         return None
 
     model = WhisperModel(WHISPER_MODEL_SIZE, device="cpu", compute_type="int8")
-    segments, _ = model.transcribe(str(audio_path), word_timestamps=True, language="es")
+    # El audio se decodifica con ffmpeg y se le pasa ya como array: si se le
+    # pasa la ruta, faster-whisper lo abre con PyAV y algunas versiones de
+    # PyAV (p.ej. la 19) rompen esa llamada ("unexpected keyword argument
+    # 'metadata_errors'").
+    decoded = subprocess.run(
+        ["ffmpeg", "-v", "error", "-i", str(audio_path), "-f", "f32le", "-ac", "1", "-ar", "16000", "-"],
+        capture_output=True,
+    )
+    if decoded.returncode != 0 or not decoded.stdout:
+        print(f"  [AVISO] No se pudo decodificar el audio para whisper: {decoded.stderr[-300:]!r}")
+        return None
+    audio = np.frombuffer(decoded.stdout, dtype=np.float32)
+    segments, _ = model.transcribe(audio, word_timestamps=True, language="es")
 
     words = []
     for segment in segments:

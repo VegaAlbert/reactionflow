@@ -50,7 +50,8 @@ LIGAS = {
 CRITERIO = (
     "Escala dura: 5 = cumplió sin más. Gol o asistencia suman; un error que acaba "
     "en gol en contra resta mucho; el 10 queda reservado a un partido perfecto. "
-    "Solo puntúa quien juega 15 minutos o más."
+    "Solo puntúa quien juega 15 minutos o más, salvo que en menos tiempo marque, dé una "
+    "asistencia o cometa un error que cueste un gol: entonces también lleva nota."
 )
 
 # Filas de la alineación: cuanto más alto, más adelantado. Y lado del campo:
@@ -187,7 +188,10 @@ def datos_del_partido(equipo: str, plantilla: dict, evento: str) -> dict:
         if not j:
             extras[jid] = {"nombre": nombre_espn}
         stats = {s["name"]: s.get("displayValue") for s in p.get("stats", [])}
-        stats = {k: v for k, v in stats.items() if v not in (None, "0") and k != "appearances"}
+        # "goalsConceded" es del equipo, no del jugador: solo cuenta para el
+        # portero (si no, Claude acaba culpando a todos de los goles).
+        ruido = {"appearances", "subIns"} | ({"goalsConceded"} if p.get("position", {}).get("abbreviation") != "G" else set())
+        stats = {k: v for k, v in stats.items() if v not in (None, "0") and k not in ruido}
         info = {
             "id": jid,
             "nombre": j["nombre"] if j else nombre_espn,
