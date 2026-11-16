@@ -1,0 +1,216 @@
+{
+  "pack": "GTA 6 — día de lanzamiento (jueves 19 de noviembre de 2026)",
+  "datos_a": "2026-11-16",
+  "fuentes": [
+    "Web oficial: https://www.rockstargames.com/VI (fecha, plataformas, precarga 10 nov, Jason y Lucia, Leonida, Vice City, ediciones)",
+    "Precarga y tamaño (hasta 212 GB, cajas con código desde el 12 nov): Forbes, KeenGamer, IBTimes (3 nov 2026)",
+    "Precio en España 79,99 / 99,99 €: Geeknetic, Vandal, PS Store",
+    "Idiomas (13 de texto, voces solo en inglés): Vandal, Generación Xbox",
+    "Preventas de más de 1.000 M$: Forbes España",
+    "Primer tráiler, 90 M de visitas en 24 h: Guinness World Records"
+  ],
+  "videos": [
+    {
+      "id": "01_hora",
+      "gato": true,
+      "paleta": "atardecer",
+      "titulo_publicacion": "¿A qué hora sale GTA 6 en España? 🕛",
+      "descripcion": "GTA 6 sale el jueves 19 de noviembre a medianoche, hora local, en PS5 y Xbox Series X|S. La precarga digital está abierta desde el 10 de noviembre.",
+      "hashtags": "#gta6 #gtavi #gta #rockstargames #ps5 #xbox #gaming #parati",
+      "escenas": [
+        {"tipo": "titular", "texto": "¿A QUÉ HORA SALE GTA 6?", "sub": "en España",
+         "voz": "¡Miau! ¿A qué hora puedes jugar a GTA seis? Te lo digo en treinta segundos."},
+        {"tipo": "dato", "grande": "00:00", "texto": "jueves 19 de noviembre · hora local",
+         "voz": "Se desbloquea a medianoche, hora local: en España, a las doce de la noche del miércoles al jueves diecinueve."},
+        {"tipo": "lista", "titulo": "Plataformas", "items": ["PlayStation 5", "Xbox Series X|S"],
+         "voz": "Sale en PlayStation cinco y en Xbox Series X y S."},
+        {"tipo": "dato", "grande": "10 NOV", "texto": "precarga digital abierta",
+         "voz": "Si lo tienes en digital, la precarga está abierta desde el diez de noviembre: descárgalo ya y a medianoche, a jugar."},
+        {"tipo": "cierre", "texto": "¿Lo juegas a las 00:00?",
+         "voz": "¿Te quedas despierto para jugarlo a medianoche? Te leo en comentarios. ¡Miau!"}
+      ]
+    },
+    {
+      "id": "02_tamano",
+      "gato": false,
+      "paleta": "noche",
+      "titulo_publicacion": "¿Cuánto ocupa GTA 6? Prepara espacio 💾",
+      "descripcion": "GTA 6 ocupa hasta 212 GB según la consola. Libera espacio y deja la precarga terminada antes del jueves 19.",
+      "hashtags": "#gta6 #gtavi #ps5 #xboxseriesx #gaming #trucos #parati",
+      "escenas": [
+        {"tipo": "titular", "texto": "¿CUÁNTO OCUPA GTA 6?", "sub": "prepara la consola",
+         "voz": "¿Cuánto espacio necesitas para GTA seis? Prepárate, porque es enorme."},
+        {"tipo": "dato", "grande": "212 GB", "texto": "como máximo, según la consola",
+         "voz": "Hasta doscientos doce gigas, según Rockstar. El tamaño exacto cambia según la consola."},
+        {"tipo": "lista", "titulo": "Antes del jueves", "items": ["Borra lo que no juegues", "Mira el espacio libre", "Termina la precarga"],
+         "voz": "Así que borra lo que no juegues, mira cuánto espacio te queda y deja la precarga terminada antes del jueves."},
+        {"tipo": "dato", "grande": "12 NOV", "texto": "precarga de la edición en caja (con código)",
+         "voz": "¿Lo compraste en caja? Trae un código de descarga, y su precarga empieza el doce de noviembre."},
+        {"tipo": "cierre", "texto": "¿Te cabe en la consola?",
+         "voz": "¿Te cabe o te toca hacer limpieza? Cuéntamelo en comentarios."}
+      ]
+    },
+    {
+      "id": "03_precio",
+      "gato": false,
+      "paleta": "playa",
+      "titulo_publicacion": "¿Cuánto cuesta GTA 6? Estándar vs Ultimate 💸",
+      "descripcion": "Precio de GTA 6 en España: 79,99 € la edición estándar y 99,99 € la Ultimate. Al reservar, Pack Vintage Vice City.",
+      "hashtags": "#gta6 #gtavi #precio #ps5 #xbox #gaming #parati",
+      "escenas": [
+        {"tipo": "titular", "texto": "¿CUÁNTO CUESTA GTA 6?", "sub": "precios en España",
+         "voz": "¿Cuánto cuesta GTA seis en España? Te lo resumo."},
+        {"tipo": "comparar", "izq": {"titulo": "Estándar", "grande": "79,99 €"}, "der": {"titulo": "Ultimate", "grande": "99,99 €"},
+         "voz": "La edición estándar cuesta setenta y nueve con noventa y nueve euros, y la Ultimate, noventa y nueve con noventa y nueve."},
+        {"tipo": "lista", "titulo": "La Ultimate añade", "items": ["Colección de objetos exclusivos", "Repartidos por la historia"],
+         "voz": "La Ultimate suma una colección de objetos exclusivos repartidos por toda la historia de Jason y Lucia."},
+        {"tipo": "dato", "grande": "BONUS", "texto": "Pack Vintage Vice City al reservar",
+         "voz": "Y si lo reservas, te llevas el Pack Vintage Vice City."},
+        {"tipo": "cierre", "texto": "¿Estándar o Ultimate?",
+         "voz": "¿Tú cuál te pillas, la estándar o la Ultimate?"}
+      ]
+    },
+    {
+      "id": "04_espanol",
+      "gato": true,
+      "paleta": "atardecer",
+      "titulo_publicacion": "¿GTA 6 está en español? Sí… y no 🇪🇸",
+      "descripcion": "GTA 6 llega con textos en castellano y español de México (13 idiomas), pero las voces son solo en inglés.",
+      "hashtags": "#gta6 #gtavi #español #doblaje #gaming #rockstar #parati",
+      "escenas": [
+        {"tipo": "titular", "texto": "¿GTA 6 ESTÁ EN ESPAÑOL?", "sub": "sí… y no",
+         "voz": "¡Miau! ¿GTA seis está en español? Sí... y no."},
+        {"tipo": "comparar", "izq": {"titulo": "Textos", "grande": "SÍ", "nota": "castellano y México"}, "der": {"titulo": "Voces", "grande": "NO", "nota": "solo inglés"},
+         "voz": "Los textos y subtítulos vienen en castellano y en español de México, pero las voces son solo en inglés."},
+        {"tipo": "dato", "grande": "13", "texto": "idiomas de texto",
+         "voz": "En total, trece idiomas de texto."},
+        {"tipo": "dato", "grande": "0", "texto": "GTA principales doblados al español",
+         "voz": "Y no es nuevo: Rockstar nunca ha doblado un GTA principal."},
+        {"tipo": "cierre", "texto": "¿Lo querías doblado?",
+         "voz": "¿Tú lo habrías querido doblado? Te leo. ¡Miau!"}
+      ]
+    },
+    {
+      "id": "05_pc",
+      "gato": false,
+      "paleta": "noche",
+      "titulo_publicacion": "¿GTA 6 sale en PC? 🖥️",
+      "descripcion": "GTA 6 sale el 19 de noviembre solo en PS5 y Xbox Series X|S. No hay fecha para PC, y no sale en PS4 ni Xbox One.",
+      "hashtags": "#gta6 #gtavi #pc #ps5 #xbox #gaming #parati",
+      "escenas": [
+        {"tipo": "titular", "texto": "¿GTA 6 SALE EN PC?", "sub": "la pregunta del millón",
+         "voz": "La pregunta del millón: ¿sale GTA seis en PC?"},
+        {"tipo": "comparar", "izq": {"titulo": "Día 1", "grande": "PS5 · XBOX", "nota": "Series X|S"}, "der": {"titulo": "PC", "grande": "SIN FECHA"},
+         "voz": "El diecinueve sale en PlayStation cinco y Xbox Series. Para PC, Rockstar no ha dado fecha."},
+        {"tipo": "lista", "titulo": "Tampoco sale en", "items": ["PS4", "Xbox One"], "marca": "no",
+         "voz": "Y ojo: ni PlayStation cuatro ni Xbox One. Solo consolas de nueva generación."},
+        {"tipo": "dato", "grande": "2013 → 2015", "texto": "GTA V: de consolas a PC",
+         "voz": "Para que te hagas una idea, GTA cinco salió en consolas en dos mil trece y en PC en dos mil quince."},
+        {"tipo": "cierre", "texto": "¿Esperas a PC?",
+         "voz": "¿Esperas a la versión de PC o te pillas una consola?"}
+      ]
+    },
+    {
+      "id": "06_jason_lucia",
+      "gato": false,
+      "paleta": "playa",
+      "titulo_publicacion": "¿Quiénes son Jason y Lucia? Los protas de GTA 6 👫",
+      "descripcion": "Jason y Lucia, los dos protagonistas de GTA 6: un golpe fácil sale mal y acaban en una conspiración criminal por todo Leonida.",
+      "hashtags": "#gta6 #gtavi #jason #lucia #rockstar #gaming #parati",
+      "escenas": [
+        {"tipo": "titular", "texto": "JASON Y LUCIA", "sub": "los protagonistas de GTA 6",
+         "voz": "¿Quiénes son Jason y Lucia, los protagonistas de GTA seis?"},
+        {"tipo": "cita", "texto": "Siempre han sabido que la baraja está en su contra",
+         "voz": "Según Rockstar, siempre han sabido que la baraja está en su contra."},
+        {"tipo": "dato", "grande": "1 GOLPE", "texto": "fácil… que sale mal",
+         "voz": "Un golpe fácil sale mal y acaban metidos en una conspiración criminal por todo Leonida."},
+        {"tipo": "dato", "grande": "2", "texto": "contra todo un estado",
+         "voz": "Solo se tienen el uno al otro."},
+        {"tipo": "cierre", "texto": "¿Team Jason o team Lucia?",
+         "voz": "¿Tú eres más del team Jason o del team Lucia?"}
+      ]
+    },
+    {
+      "id": "07_leonida",
+      "gato": false,
+      "paleta": "atardecer",
+      "titulo_publicacion": "¿Dónde pasa GTA 6? Leonida y Vice City 🌴",
+      "descripcion": "GTA 6 transcurre en Leonida y vuelve Vice City, la ciudad del mítico GTA de 2002.",
+      "hashtags": "#gta6 #gtavi #vicecity #leonida #gaming #rockstar #parati",
+      "escenas": [
+        {"tipo": "titular", "texto": "¿DÓNDE PASA GTA 6?", "sub": "bienvenido a Leonida",
+         "voz": "¿Dónde transcurre GTA seis?"},
+        {"tipo": "dato", "grande": "LEONIDA", "texto": "el estado del juego",
+         "voz": "En Leonida, un estado inspirado en Florida."},
+        {"tipo": "dato", "grande": "VICE CITY", "texto": "vuelve la ciudad de 2002",
+         "voz": "Y vuelve Vice City, la ciudad del mítico GTA de dos mil dos, en versión actual."},
+        {"tipo": "cita", "texto": "El lado más oscuro del lugar más soleado de América",
+         "voz": "Rockstar la define como el lado más oscuro del lugar más soleado de América."},
+        {"tipo": "cierre", "texto": "¿Qué harás primero?",
+         "voz": "¿Qué es lo primero que vas a hacer en Vice City?"}
+      ]
+    },
+    {
+      "id": "08_checklist",
+      "gato": true,
+      "paleta": "noche",
+      "titulo_publicacion": "Checklist para el jueves: no la líes con GTA 6 ✅",
+      "descripcion": "Antes de las 00:00 del jueves 19: precarga terminada, hasta 212 GB libres, consola actualizada y mando cargado.",
+      "hashtags": "#gta6 #gtavi #checklist #ps5 #xbox #gaming #parati",
+      "escenas": [
+        {"tipo": "titular", "texto": "CHECKLIST PARA EL JUEVES", "sub": "GTA 6 · 19 de noviembre",
+         "voz": "¡Miau! Checklist para no liarla el jueves con GTA seis."},
+        {"tipo": "lista", "titulo": "Antes de las 00:00", "items": ["Precarga terminada", "Hasta 212 GB libres", "Consola actualizada", "Mando cargado"],
+         "voz": "Precarga terminada, hasta doscientos doce gigas libres, la consola actualizada y el mando cargado."},
+        {"tipo": "dato", "grande": "00:00", "texto": "desbloqueo, hora local",
+         "voz": "A medianoche, hora local, se desbloquea."},
+        {"tipo": "lista", "titulo": "Opcional", "items": ["Snacks", "Una buena excusa para el día siguiente"],
+         "voz": "Opcional: snacks y una buena excusa para el día siguiente."},
+        {"tipo": "cierre", "texto": "Guárdalo para el jueves",
+         "voz": "Guárdalo para el jueves. ¡Miau!"}
+      ]
+    },
+    {
+      "id": "09_numeros",
+      "gato": false,
+      "paleta": "playa",
+      "titulo_publicacion": "GTA 6 en números 🔢",
+      "descripcion": "13 años desde GTA V, más de 1.000 millones de dólares en preventas (Forbes), 90 millones de visitas del primer tráiler en 24 horas (Guinness) y hasta 212 GB.",
+      "hashtags": "#gta6 #gtavi #datos #curiosidades #gaming #rockstar #parati",
+      "escenas": [
+        {"tipo": "titular", "texto": "GTA 6 EN NÚMEROS", "sub": "lo que no sabías",
+         "voz": "GTA seis en números."},
+        {"tipo": "dato", "grande": "13 AÑOS", "texto": "desde GTA V (2013)",
+         "voz": "Trece años desde GTA cinco."},
+        {"tipo": "dato", "grande": "+1.000 M$", "texto": "en preventas, según Forbes",
+         "voz": "Más de mil millones de dólares en preventas, según Forbes."},
+        {"tipo": "dato", "grande": "90 M", "texto": "visitas del primer tráiler en 24 h (Guinness)",
+         "voz": "Noventa millones de visitas en veinticuatro horas para su primer tráiler: récord Guinness."},
+        {"tipo": "dato", "grande": "212 GB", "texto": "de descarga, como máximo",
+         "voz": "Y hasta doscientos doce gigas de descarga."},
+        {"tipo": "cierre", "texto": "¿Cuál te ha sorprendido más?",
+         "voz": "¿Qué número te ha sorprendido más?"}
+      ]
+    },
+    {
+      "id": "10_espera",
+      "gato": true,
+      "paleta": "atardecer",
+      "titulo_publicacion": "13 años esperando GTA 6 😿",
+      "descripcion": "De GTA V en 2013 a GTA 6 el 19 de noviembre de 2026: dos retrasos y trece años después, por fin.",
+      "hashtags": "#gta6 #gtavi #gta5 #meme #gaming #gato #parati",
+      "escenas": [
+        {"tipo": "titular", "texto": "13 AÑOS ESPERANDO", "sub": "por fin GTA 6",
+         "voz": "¡Miau! Cuando salió GTA cinco, yo era un gatito."},
+        {"tipo": "dato", "grande": "2013", "texto": "sale GTA V",
+         "voz": "Dos mil trece: sale GTA cinco. Yo, con bigotes de bebé."},
+        {"tipo": "dato", "grande": "2 RETRASOS", "texto": "2025 → mayo 2026 → noviembre 2026",
+         "voz": "Luego, dos retrasos: de dos mil veinticinco a mayo, y de mayo a noviembre."},
+        {"tipo": "dato", "grande": "19/11", "texto": "por fin es el día",
+         "voz": "Y ahora, con canas en los bigotes, por fin: diecinueve de noviembre."},
+        {"tipo": "cierre", "texto": "¿Cuántos años tenías con GTA V?",
+         "voz": "¿Y tú cuántos años tenías cuando salió GTA cinco? ¡Miau!"}
+      ]
+    }
+  ]
+}
