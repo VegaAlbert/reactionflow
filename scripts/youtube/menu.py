@@ -132,7 +132,11 @@ def pick_from_list(items: list, prompt: str):
         print("  (no hay ninguno)")
         return None
     for i, item in enumerate(items, start=1):
-        print(f"  {i}. {item.name}")
+        try:
+            nombre = item.relative_to(FINAL_DIR).as_posix()  # p.ej. gta6/01_hora.mp4
+        except ValueError:
+            nombre = item.name
+        print(f"  {i}. {nombre}")
     while True:
         choice = input(prompt).strip()
         if not choice:
@@ -144,9 +148,10 @@ def pick_from_list(items: list, prompt: str):
 
 
 def list_final_videos() -> list:
+    """Vídeos terminados, también los de subcarpetas (p.ej. final/gta6/)."""
     if not FINAL_DIR.exists():
         return []
-    return sorted(FINAL_DIR.glob("*.mp4"))
+    return sorted(FINAL_DIR.rglob("*.mp4"))
 
 
 def _load_json(path: Path) -> dict:
@@ -1806,6 +1811,45 @@ def flow_futbol():
 
 
 # ----------------------------------------------------------------------------
+# Opción 9 — packs de vídeos animados (p.ej. GTA 6)
+# ----------------------------------------------------------------------------
+
+SHORTS_DIR = Path("./shorts")
+
+
+def flow_shorts_animados():
+    """Genera de una vez todos los vídeos de un pack (shorts/<pack>/guiones.json):
+    voz del gato, animación, subtítulos y gato. Los deja en final/<pack>/ con
+    un publicar.txt con títulos, descripciones y hashtags."""
+    packs = sorted(p.parent for p in SHORTS_DIR.glob("*/guiones.json")) if SHORTS_DIR.exists() else []
+    print("\n--- Packs de vídeos animados ---")
+    if not packs:
+        print(f"  No hay packs en {SHORTS_DIR.resolve()} (carpetas con un guiones.json).")
+        return
+    for i, p in enumerate(packs, start=1):
+        datos = _load_json(p / "guiones.json")
+        print(f"  {i}. {p.name} — {datos.get('pack', '')} ({len(datos.get('videos', []))} vídeos)")
+    choice = input("¿Qué pack? (número, Enter = el primero): ").strip() or "1"
+    if not choice.isdigit() or not (1 <= int(choice) <= len(packs)):
+        return
+    pack = packs[int(choice) - 1]
+    videos = _load_json(pack / "guiones.json").get("videos", [])
+    print("  Vídeos del pack:")
+    for v in videos:
+        print(f"    - {v['id']}: {v.get('titulo_publicacion', '')}")
+    solo = input("  Enter para hacerlos todos, o escribe el id de uno (p.ej. 01_hora): ").strip()
+    args = [str(pack)] + (["--solo", solo] if solo else [])
+    print("\n  Generando (voz de ElevenLabs + animación + gato). Tarda unos minutos por vídeo...")
+    if not run_step("shorts_animados.py", *args):
+        print("  Fallo generando los vídeos.")
+        return
+    carpeta = FINAL_DIR / pack.name
+    print(f"\n  Hecho: {carpeta.resolve()}")
+    print("  Títulos y descripciones en publicar.txt de esa carpeta. Para subirlos, opción 5 o a mano.")
+    open_file(carpeta)
+
+
+# ----------------------------------------------------------------------------
 # Menú principal
 # ----------------------------------------------------------------------------
 
@@ -1823,6 +1867,7 @@ def main_menu():
         print("6. Regenerar avatar o recomponer un vídeo ya hecho")
         print("7. Ver créditos gastados (Replicate / ElevenLabs / Claude)")
         print("8. Vídeo de notas de fútbol (Barça / Madrid)")
+        print("9. Pack de vídeos animados (GTA 6...)")
         print("0. Salir")
 
         choice = input("\nElige una opción: ").strip()
@@ -1847,6 +1892,8 @@ def main_menu():
                 flow_show_spend()
             elif choice == "8":
                 flow_futbol()
+            elif choice == "9":
+                flow_shorts_animados()
             elif choice == "0":
                 print("Hasta luego.")
                 break

@@ -49,3 +49,6 @@ scripts/youtube/futbol_tmp/
 # con el que ya se descargó en el otro ordenador al hacer git pull).
 # Los que ya están en el repositorio siguen versionados.
 scripts/youtube/assets/futbol/escudos/*.png
+
+# Audios y fotogramas temporales de shorts_animados.py
+scripts/youtube/shorts_tmp/
