@@ -51,6 +51,7 @@ FUENTE_TITULAR = Path("./assets/fonts/Anton-Regular.ttf")
 # el centro y los subtítulos un poco por encima del borde inferior.
 CENTRO_Y = 860
 SUB_ABAJO_SIN_GATO = 300
+SUB_ABAJO_CON_GATO = 420
 
 PALETAS = {
     "atardecer": {
@@ -513,7 +514,7 @@ def renderizar(video: dict, tramos: list, duracion: float, salida: Path, marca: 
         d.rectangle([0, 0, int(W * t / duracion), 10], fill=pal["acento"] + (255,))
         destello = 1 - (t - inicios[k]) / 0.15
         if 0 < destello <= 1 and k > 0:
-            capa = Image.new("RGBA", (W, H), (255, 255, 255, int(110 * destello)))
+            capa = Image.new("RGBA", (W, H), (255, 255, 255, int(55 * destello)))
             lienzo.alpha_composite(capa)
         proc.stdin.write(lienzo.convert("RGB").tobytes())
     proc.stdin.close()
@@ -558,10 +559,10 @@ def hacer_video(pack: dict, video: dict, carpeta_salida: Path, prueba: bool, reh
     print(f"     {duracion:.1f} s")
 
     print("  2/5 Subtítulos...")
-    if con_gato:
-        fv.SUB_MARGEN_IZQ, fv.SUB_MARGEN_DER, fv.SUB_MARGEN_ABAJO = 30, fv.GATO_ANCHO + 40, 60
-    else:
-        fv.SUB_MARGEN_IZQ, fv.SUB_MARGEN_DER, fv.SUB_MARGEN_ABAJO = 60, 140, SUB_ABAJO_SIN_GATO
+    # Subtítulos por encima de la franja que tapa TikTok abajo; con gato, por
+    # encima del gato (que va abajo a la derecha).
+    fv.SUB_MARGEN_IZQ, fv.SUB_MARGEN_DER = 60, 140
+    fv.SUB_MARGEN_ABAJO = SUB_ABAJO_CON_GATO if con_gato else SUB_ABAJO_SIN_GATO
     tiempos = fv.tiempos_palabras(frases, narracion, tramos)
     subtitulos = fv.escribir_subtitulos(tiempos, tmp / "subtitulos.ass")
 
