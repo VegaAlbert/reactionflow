@@ -12,8 +12,10 @@ Requisitos:
 
 Uso:
     python generate_miau_options.py
+    python generate_miau_options.py --voice-id OTRO_VOICE_ID --output-dir ./assets/gato_intros_voice2
 """
 
+import argparse
 import os
 from pathlib import Path
 
@@ -52,24 +54,33 @@ ELEVENLABS_MODEL = "eleven_v3"
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Genera variantes del 'Miau' de sello con ElevenLabs")
+    parser.add_argument("--voice-id", type=str, default=None,
+                         help="Voice ID a usar en vez del ELEVENLABS_VOICE_ID del .env (para el Miau de una voz secundaria)")
+    parser.add_argument("--output-dir", type=str, default=None,
+                         help="Carpeta de salida en vez de ./assets/miau_opciones")
+    args = parser.parse_args()
+
     load_dotenv()
     api_key = os.getenv("ELEVENLABS_API_KEY")
-    voice_id = os.getenv("ELEVENLABS_VOICE_ID")
+    voice_id = args.voice_id or os.getenv("ELEVENLABS_VOICE_ID")
 
     if not api_key or not voice_id:
         raise SystemExit("Falta ELEVENLABS_API_KEY o ELEVENLABS_VOICE_ID en el .env")
 
+    output_dir = Path(args.output_dir) if args.output_dir else OUTPUT_DIR
+
     from elevenlabs.client import ElevenLabs
     client = ElevenLabs(api_key=api_key)
 
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
     count = 0
 
     for text in TEXT_VARIANTS:
         for style_cfg in STYLE_VARIANTS:
             count += 1
             filename = f"{count:02d}_{style_cfg['label']}_{text[:10].replace(' ', '_').replace('~', '')}.mp3"
-            output_path = OUTPUT_DIR / filename
+            output_path = output_dir / filename
 
             print(f"Generando [{count}] \"{text}\" ({style_cfg['label']})...")
 
@@ -92,9 +103,10 @@ def main():
             except Exception as e:
                 print(f"   [ERROR] {e}")
 
-    print(f"\nListo. {count} variantes generadas en {OUTPUT_DIR}")
-    print("Escúchalas todas y cuando elijas tu favorita, cópiala como:")
-    print("  assets/gato_intro.mp3")
+    print(f"\nListo. {count} variantes generadas en {output_dir}")
+    if output_dir == OUTPUT_DIR:
+        print("Escúchalas todas y cuando elijas tu favorita, cópiala como:")
+        print("  assets/gato_intro.mp3")
 
 
 if __name__ == "__main__":

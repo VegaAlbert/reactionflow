@@ -53,6 +53,7 @@ import random
 import subprocess
 import sys
 import tempfile
+import time
 import unicodedata
 import wave
 from dataclasses import dataclass
@@ -60,6 +61,8 @@ from difflib import SequenceMatcher
 from pathlib import Path
 
 import numpy as np
+
+import remotion_bridge
 
 # La consola de Windows por defecto usa cp1252, que no soporta emojis ni
 # muchos caracteres. Sin esto, algún carácter raro en un guion o título
@@ -99,6 +102,29 @@ SPRITE_SORPRESA = "gato_sorpresa.png"
 # sprite-swap sigue funcionando igual que siempre con los 3 de toda la vida.
 SPRITE_BOCA_CUARTO = "gato_boca_cuarto.png"
 SPRITE_BOCA_TRES_CUARTOS = "gato_boca_tres_cuartos.png"
+# Tamaño común al que se normalizan todos los sprites antes de montar el
+# vídeo del avatar (ver write_concat_list).
+SPRITE_NORMALIZED_SIZE = 1024
+
+# Caras expresivas opcionales (generate_avatar_expressions.py, con IA): si
+# existen las 5 en AVATAR_DIR, el avatar se anima por EMOCIÓN del guion (una
+# cara fija por tramo, sin sprite-swap por volumen) en vez del sprite-swap
+# clásico — ver has_expression_sprites()/classify_emotion_segments() más
+# abajo. "sorpresa" reutiliza el sprite que ya existía de toda la vida.
+EMOTION_SPRITES = {
+    "neutral": SPRITE_BOCA_CERRADA,
+    "alegre": "gato_alegre.png",
+    "serio": "gato_serio.png",
+    "enfadado": "gato_enfadado.png",
+    "sarcastico": "gato_sarcastico.png",
+    "emocionado": "gato_emocionado.png",
+    "sorpresa": SPRITE_SORPRESA,
+}
+# Las que hacen falta generar con IA para poder usar este modo (neutral y
+# sorpresa ya existían).
+EMOTION_SPRITES_NEW = ["alegre", "serio", "enfadado", "sarcastico", "emocionado"]
+
+CLAUDE_MODEL = "claude-sonnet-5"  # mismo modelo que generate_script.py
 
 OUTPUT_WIDTH = 1080
 OUTPUT_HEIGHT = 1920
@@ -222,12 +248,15 @@ def run(cmd: list, **kwargs) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, capture_output=True, text=True, **kwargs)
 
 
-def check_tools() -> None:
-    for tool in ("ffmpeg", "ffprobe"):
+def check_tools(legacy_ffmpeg: bool = False) -> None:
+    tools = [("ffmpeg", "-version"), ("ffprobe", "-version")]
+    if not legacy_ffmpeg:
+        tools.append(("node", "--version"))
+    for tool, version_flag in tools:
         try:
-            subprocess.run([tool, "-version"], capture_output=True, check=True)
+            subprocess.run([tool, version_flag], capture_output=True, check=True)
         except (subprocess.CalledProcessError, FileNotFoundError):
-            sys.exit(f"No se encuentra '{tool}'. Instala ffmpeg y añádelo al PATH.")
+            sys.exit(f"No se encuentra '{tool}'. Instálalo y añádelo al PATH.")
 
     missing_sprites = [
         name for name in (
@@ -323,7 +352,16 @@ def get_duration(filepath: Path) -> float:
         "ffprobe", "-v", "error", "-show_entries", "format=duration",
         "-of", "json", str(filepath),
     ])
-    return float(json.loads(result.stdout)["format"]["duration"])
+    try:
+        return float(json.loads(result.stdout)["format"]["duration"])
+    except (json.JSONDecodeError, KeyError, ValueError, TypeError):
+        # Un audio a 0 bytes o corrupto (p.ej. la narración falló a medias
+        # por cuota agotada de ElevenLabs, ver text_to_speech.py) hace que
+        # ffprobe no devuelva "format" — sys.exit en vez de dejar un
+        # KeyError sin capturar, para que el "except SystemExit" de main()
+        # lo reporte con un mensaje claro en vez de un traceback crudo.
+        sys.exit(f"[ERROR ffprobe] No se pudo leer la duración de {filepath} "
+                  "(¿archivo vacío o corrupto?).")
 
 
 # ----------------------------------------------------------------------------
@@ -422,6 +460,168 @@ def build_sprite_timeline(envelope: np.ndarray, fps: int) -> list:
     return timeline
 
 
+def has_expression_sprites() -> bool:
+    """True si ya se generaron las 5 caras expresivas (ver
+    generate_avatar_expressions.py) — en ese caso el avatar se anima por
+    emoción del guion en vez de por volumen del audio."""
+    return all((AVATAR_DIR / EMOTION_SPRITES[e]).exists() for e in EMOTION_SPRITES_NEW)
+
+
+def classify_emotion_segments(script_text: str) -> list | None:
+    """Le pide a Claude que divida el guion en tramos consecutivos y le
+    asigne a cada uno UNA emoción de EMOTION_SPRITES, sin cambiar ni una
+    palabra (para poder alinear cada tramo con sus timestamps reales por
+    posición de palabra, igual que ya hace align_script_to_timestamps con
+    los subtítulos). Devuelve una lista de (texto_del_tramo, emocion) en el
+    mismo orden que el guion, o None si falla (se anima por volumen como
+    siempre, sprite-swap clásico)."""
+    import json as _json
+    import os as _os
+
+    from dotenv import load_dotenv
+    load_dotenv()
+    api_key = _os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        print("  [AVISO] Falta ANTHROPIC_API_KEY — no se pueden clasificar emociones, "
+              "se anima por volumen como siempre.")
+        return None
+
+    emotions = ", ".join(e for e in EMOTION_SPRITES if e != "neutral")
+    prompt = (
+        f"Divide este guion de reacción (en español) en, como MUCHO, 2 o 3 tramos "
+        f"GRANDES y CONSECUTIVOS — no un tramo por frase. Agrupa varias frases seguidas "
+        f"bajo la misma emoción dominante siempre que puedas: el objetivo es que la cara "
+        f"del avatar cambie muy pocas veces en todo el vídeo (2 o 3 veces como mucho, "
+        f"nunca en cada oración), solo cuando el tono del guion cambia de verdad "
+        f"(p.ej. de contar algo tranquilo a indignarse, o de serio a soltar una broma). "
+        f"Cubre el guion ENTERO sin saltarte ni cambiar ni una palabra, en el mismo orden "
+        f"exacto en que aparecen.\n\n"
+        f"Asigna a cada tramo UNA emoción de esta lista: {emotions}, neutral (para partes "
+        f"sin carga emocional clara).\n\n"
+        f"Guion:\n\"{script_text}\"\n\n"
+        f"Responde SOLO con un JSON (sin texto ni explicación alrededor, sin ```): "
+        f"una lista de objetos {{\"text\": \"...\", \"emotion\": \"...\"}} — como mucho 3 objetos."
+    )
+
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+        response = client.messages.create(
+            model=CLAUDE_MODEL,
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = "".join(block.text for block in response.content if block.type == "text").strip()
+        # Coge el array JSON aunque Claude lo envuelva en ```json...``` o le
+        # añada algún comentario alrededor pese a lo pedido en el prompt —
+        # mucho más robusto que solo quitar backticks.
+        start, end = raw.find("["), raw.rfind("]")
+        if start == -1 or end == -1:
+            raise ValueError(f"no se encontró un array JSON en la respuesta: {raw[:200]!r}")
+        segments = _json.loads(raw[start:end + 1])
+        result = [(s["text"], s.get("emotion", "neutral")) for s in segments]
+
+        total_words = sum(len(text.split()) for text, _ in result)
+        if total_words != len(script_text.split()):
+            print("  [AVISO] La clasificación de emociones no cuadra en nº de palabras "
+                  "con el guion — se anima por volumen como siempre.")
+            return None
+
+        # Red de seguridad: si Claude no ha agrupado del todo (p.ej. dos
+        # tramos seguidos con la misma emoción), se fusionan aquí para que
+        # la cara cambie el mínimo posible, nunca frase por frase.
+        merged = [result[0]]
+        for text, emotion in result[1:]:
+            prev_text, prev_emotion = merged[-1]
+            if emotion == prev_emotion:
+                merged[-1] = (f"{prev_text} {text}", emotion)
+            else:
+                merged.append((text, emotion))
+
+        print(f"  {len(merged)} tramo(s) de emoción: "
+              + ", ".join(f"{e} ({len(t.split())}p)" for t, e in merged))
+        return merged
+    except Exception as e:
+        print(f"  [AVISO] No se pudo clasificar emociones del guion ({e}) — "
+              "se anima por volumen como siempre.")
+        return None
+
+
+def build_emotion_sprite_timeline(word_timings: list, emotion_segments: list,
+                                   total_duration: float, fps: int) -> list:
+    """Construye la lista de sprites (uno por frame) a partir de los tramos
+    de emoción ya clasificados: cada tramo muestra SU cara fija durante todo
+    su rango real de tiempo (del principio de su primera palabra al final de
+    su última, según word_timings — el mismo timing real que usan los
+    subtítulos), sin cambiar hasta el siguiente tramo. Los huecos sin tramo
+    conocido (p.ej. el silencio real entre título y despedida en el modo
+    disperso) se quedan en reposo neutral. El parpadeo periódico se
+    superpone igual que en build_sprite_timeline, pero solo sobre los tramos
+    neutrales (no hay una versión "parpadeando" de cada expresión)."""
+    n_frames = max(1, round(total_duration * fps))
+    timeline = [EMOTION_SPRITES["neutral"]] * n_frames
+
+    idx = 0  # posición en word_timings, en el mismo orden que los tramos
+    for text, emotion in emotion_segments:
+        n_words = len(text.split())
+        words_here = word_timings[idx:idx + n_words]
+        idx += n_words
+        if not words_here:
+            continue
+
+        start = words_here[0][1]
+        end = words_here[-1][2]
+        sprite = EMOTION_SPRITES.get(emotion, EMOTION_SPRITES["neutral"])
+        start_frame = max(0, int(start * fps))
+        end_frame = min(n_frames, int(end * fps) + 1)
+        for f in range(start_frame, end_frame):
+            timeline[f] = sprite
+
+    # Parpadeo periódico, solo durante tramos en reposo neutral (no chocan
+    # con ninguna expresión ni con "sorpresa").
+    duration = n_frames / fps
+    t = random.uniform(BLINK_MIN_INTERVAL, BLINK_MAX_INTERVAL)
+    while t < duration:
+        start_frame = int(t * fps)
+        end_frame = int((t + BLINK_DURATION) * fps)
+        for i in range(start_frame, min(end_frame, n_frames)):
+            if timeline[i] == EMOTION_SPRITES["neutral"]:
+                timeline[i] = SPRITE_OJOS_CERRADOS
+        t += random.uniform(BLINK_MIN_INTERVAL, BLINK_MAX_INTERVAL)
+
+    return timeline
+
+
+def build_scene_reaction_timeline(envelope: np.ndarray, scene_reactions: list,
+                                   total_duration: float, fps: int) -> list:
+    """Para compilaciones de varios clips: el gato dice su "Miau" del principio
+    moviendo la boca según el volumen de ese audio (mismo sprite-swap de
+    siempre), y después cambia de cara en cada clip según 'scene_reactions'
+    = [{"start": s, "end": s, "emotion": "..."}, ...] (segundos, emociones de
+    EMOTION_SPRITES). Fuera de cualquier escena se queda en reposo neutral."""
+    n_frames = max(1, round(total_duration * fps))
+    mouth_timeline = build_sprite_timeline(envelope, fps) if len(envelope) else []
+
+    # La boca solo se mueve mientras suena el Miau: hasta el último fotograma
+    # con volumen apreciable (+ un margen para cerrar la boca sin cortar seco).
+    loud = np.nonzero(envelope > VOL_LOW_THRESHOLD)[0] if len(envelope) else []
+    mouth_frames = min(n_frames, int(loud[-1]) + 1 + round(0.15 * fps)) if len(loud) else 0
+
+    timeline = []
+    for f in range(n_frames):
+        if f < mouth_frames and f < len(mouth_timeline):
+            timeline.append(mouth_timeline[f])
+            continue
+        t = f / fps
+        emotion = "neutral"
+        for scene in scene_reactions:
+            if scene["start"] <= t < scene["end"]:
+                emotion = scene["emotion"]
+                break
+        timeline.append(EMOTION_SPRITES.get(emotion, EMOTION_SPRITES["neutral"]))
+    return timeline
+
+
 def write_concat_list(timeline: list, fps: int, tmp_dir: Path) -> Path:
     """Agrupa frames consecutivos con el mismo sprite en segmentos, y escribe
     un fichero de lista para el demuxer `concat` de ffmpeg (formato
@@ -434,8 +634,24 @@ def write_concat_list(timeline: list, fps: int, tmp_dir: Path) -> Path:
         else:
             segments.append((sprite, 1))
 
+    # Los sprites no tienen todos el mismo tamaño (los de expresión son de
+    # 1024px y los de boca de 2048px): si el demuxer `concat` cambia de
+    # resolución a mitad, ffmpeg descarta fotogramas y descuadra los tiempos
+    # (el vídeo sale más largo y con las caras cambiadas de sitio). Se
+    # normalizan copias a un mismo tamaño en el directorio temporal.
+    avatar_dir_abs = tmp_dir / "sprites"
+    avatar_dir_abs.mkdir(exist_ok=True)
+    avatar_dir_abs = avatar_dir_abs.resolve()
+    for sprite in {s for s, _ in segments}:
+        result = run([
+            "ffmpeg", "-y", "-i", str(AVATAR_DIR / sprite),
+            "-vf", f"scale={SPRITE_NORMALIZED_SIZE}:{SPRITE_NORMALIZED_SIZE}:flags=lanczos",
+            str(avatar_dir_abs / sprite),
+        ])
+        if result.returncode != 0:
+            sys.exit(f"[ERROR ffmpeg] No se pudo normalizar el sprite {sprite}: {result.stderr[-300:]}")
+
     list_path = tmp_dir / "avatar_concat.txt"
-    avatar_dir_abs = AVATAR_DIR.resolve()
     with open(list_path, "w", encoding="utf-8") as f:
         for sprite, n_frames in segments:
             duration = n_frames / fps
@@ -635,23 +851,25 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             )
 
 
-def build_subtitles(audio_path: Path, script_data: dict, total_duration: float, tmp_dir: Path,
-                     margin_v: int = SUB_MARGIN_V) -> Path:
-    script_text = script_data["script_es"]
-    script_words = script_text.split()
-
+def compute_word_timings(audio_path: Path, script_words: list, total_duration: float) -> list:
+    """Calcula (palabra, inicio, fin) para cada palabra del guion — con el
+    timing real del audio si hay faster-whisper instalado, o repartido
+    proporcionalmente si no. Se usa tanto para los subtítulos como para la
+    animación del avatar por emoción (build_emotion_sprite_timeline), así
+    solo se transcribe una vez con whisper aunque hagan falta las dos cosas."""
     whisper_words = transcribe_words_whisper(audio_path)
 
     if whisper_words:
-        print("  Subtítulos: usando faster-whisper para el timing real del audio.")
-        word_timings = align_script_to_timestamps(script_words, whisper_words)
-    else:
-        print("  [AVISO] faster-whisper no está instalado — subtítulos con timing "
-              "aproximado (proporcional a la longitud del texto). "
-              "Instálalo con: pip install faster-whisper")
-        # dejamos ~1s de margen al principio por si hay un "Miau" de intro
-        word_timings = proportional_fallback_timing(script_words, total_duration, lead_in=1.0)
+        print("  Usando faster-whisper para el timing real del audio.")
+        return align_script_to_timestamps(script_words, whisper_words)
 
+    print("  [AVISO] faster-whisper no está instalado — timing aproximado "
+          "(proporcional a la longitud del texto). Instálalo con: pip install faster-whisper")
+    # dejamos ~1s de margen al principio por si hay un "Miau" de intro
+    return proportional_fallback_timing(script_words, total_duration, lead_in=1.0)
+
+
+def build_subtitles(word_timings: list, tmp_dir: Path, margin_v: int = SUB_MARGIN_V) -> Path:
     cues = group_into_cues(word_timings)
     ass_path = tmp_dir / "subs.ass"
     write_ass_file(cues, ass_path, margin_v=margin_v)
@@ -862,7 +1080,8 @@ def compose_final_video(background_video: Path, avatar_clip: Path, narration_aud
 # Orquestación
 # ----------------------------------------------------------------------------
 
-def process_one(stem: str, keep_temp: bool, force_sprites: bool = False) -> None:
+def process_one(stem: str, keep_temp: bool, force_sprites: bool = False, legacy_ffmpeg: bool = False,
+                 no_emotion_avatar: bool = False) -> None:
     video_path = VIDEO_DIR / f"{stem}.mp4"
     audio_path = AUDIO_DIR / f"{stem}.mp3"
     script_path = SCRIPT_DIR / f"{stem}.json"
@@ -897,14 +1116,70 @@ def process_one(stem: str, keep_temp: bool, force_sprites: bool = False) -> None
     tmp_ctx = tempfile.TemporaryDirectory(dir=".", prefix=f"_tmp_{stem}_")
     tmp_dir = Path(tmp_ctx.name)
     try:
+        # Se calcula una sola vez (whisper transcribe el audio real) y se
+        # reutiliza tanto para los subtítulos como para la animación por
+        # emoción del avatar, si toca usarla.
+        word_timings = None
+        script_words = []
+        scene_reactions = script_data.get("scene_reactions")
+        if not no_narration:
+            script_words = script_data.get("script_es", "").split()
+            # Sin palabras de guion (solo el "Miau" de intro) no hay nada que
+            # transcribir ni subtitular.
+            word_timings = (compute_word_timings(audio_path, script_words, narration_duration)
+                            if script_words else [])
+
         if ai_avatar_path.exists() and not force_sprites:
             print(f"  Usando avatar generado con IA: {ai_avatar_path}")
             avatar_clip = ai_avatar_path
+        elif scene_reactions and has_expression_sprites():
+            print(f"  Construyendo animación del avatar (Miau + {len(scene_reactions)} reacciones por clip)...")
+            n_frames = max(1, round(narration_duration * FPS))
+            if audio_path.exists():
+                wav_path = decode_to_mono_wav(audio_path, tmp_dir)
+                envelope = compute_volume_envelope(wav_path, FPS)
+            else:
+                envelope = np.zeros(n_frames, dtype=np.float32)
+            timeline = build_scene_reaction_timeline(envelope, scene_reactions, narration_duration, FPS)
+            concat_list = write_concat_list(timeline, FPS, tmp_dir)
+            avatar_clip = tmp_dir / "avatar_raw.mp4"
+            render_avatar_clip(concat_list, FPS, avatar_clip)
         elif no_narration:
             print("  Construyendo animación del avatar (en reposo, sin narración)...")
             n_frames = max(1, round(narration_duration * FPS))
             envelope = np.zeros(n_frames, dtype=np.float32)
             timeline = build_sprite_timeline(envelope, FPS)
+            concat_list = write_concat_list(timeline, FPS, tmp_dir)
+            avatar_clip = tmp_dir / "avatar_raw.mp4"
+            render_avatar_clip(concat_list, FPS, avatar_clip)
+        elif has_expression_sprites() and not no_emotion_avatar:
+            cached = script_data.get("emotion_segments")
+            if cached:
+                print("  Reutilizando la clasificación de emociones ya guardada "
+                      "(no se gasta la API de Claude otra vez).")
+                emotion_segments = [(s["text"], s["emotion"]) for s in cached]
+            else:
+                print("  Clasificando las emociones del guion con Claude...")
+                emotion_segments = classify_emotion_segments(script_data["script_es"])
+                if emotion_segments:
+                    script_data["emotion_segments"] = [
+                        {"text": t, "emotion": e} for t, e in emotion_segments
+                    ]
+                    with open(script_path, "w", encoding="utf-8") as f:
+                        json.dump(script_data, f, ensure_ascii=False, indent=2)
+
+            if emotion_segments:
+                print("  Construyendo animación del avatar (caras por emoción, "
+                      "sin sprite-swap por volumen)...")
+                timeline = build_emotion_sprite_timeline(
+                    word_timings, emotion_segments, narration_duration, FPS,
+                )
+            else:
+                print("  Construyendo animación del avatar (sprite-swap por volumen)...")
+                wav_path = decode_to_mono_wav(audio_path, tmp_dir)
+                envelope = compute_volume_envelope(wav_path, FPS)
+                timeline = build_sprite_timeline(envelope, FPS)
+
             concat_list = write_concat_list(timeline, FPS, tmp_dir)
             avatar_clip = tmp_dir / "avatar_raw.mp4"
             render_avatar_clip(concat_list, FPS, avatar_clip)
@@ -919,33 +1194,87 @@ def process_one(stem: str, keep_temp: bool, force_sprites: bool = False) -> None
             avatar_clip = tmp_dir / "avatar_raw.mp4"
             render_avatar_clip(concat_list, FPS, avatar_clip)
 
-        margin_v = sub_margin_v_for(avatar_position)
-        if no_narration:
-            print("  Sin narración: no se generan subtítulos.")
-            ass_subs = tmp_dir / "subs.ass"
-            write_ass_file([], ass_subs, margin_v=margin_v)
-        else:
-            print("  Generando subtítulos...")
-            ass_subs = build_subtitles(audio_path, script_data, narration_duration, tmp_dir, margin_v=margin_v)
-
         channel = get_channel_credit(stem)
         if SHOW_ATTRIBUTION and not channel:
             print("  [AVISO] No se encontró el canal original en downloaded.json, no se mostrará crédito.")
 
-        print("  Componiendo vídeo final (chroma key + overlay + subtítulos + audio)...")
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-        compose_final_video(video_path, avatar_clip, None if no_narration else audio_path,
-                             ass_subs, narration_duration, output_path, channel,
-                             title=script_data.get("title"), title_duration=script_data.get("title_duration"),
-                             no_narration=no_narration, narration_segments=script_data.get("narration_segments"),
-                             avatar_position=avatar_position)
+
+        if legacy_ffmpeg:
+            margin_v = sub_margin_v_for(avatar_position)
+            if no_narration:
+                print("  Sin narración: no se generan subtítulos.")
+                ass_subs = tmp_dir / "subs.ass"
+                write_ass_file([], ass_subs, margin_v=margin_v)
+            else:
+                print("  Generando subtítulos...")
+                ass_subs = build_subtitles(word_timings, tmp_dir, margin_v=margin_v)
+
+            print("  Componiendo vídeo final (chroma key + overlay + subtítulos + audio)...")
+            compose_final_video(video_path, avatar_clip, None if no_narration else audio_path,
+                                 ass_subs, narration_duration, output_path, channel,
+                                 title=script_data.get("title"), title_duration=script_data.get("title_duration"),
+                                 no_narration=no_narration, narration_segments=script_data.get("narration_segments"),
+                                 avatar_position=avatar_position)
+        else:
+            print("  Generando avatar con canal alfa...")
+            avatar_alpha = remotion_bridge.render_chroma_alpha(
+                avatar_clip, tmp_dir,
+                chroma_color=CHROMA_COLOR, chroma_similarity=CHROMA_SIMILARITY, chroma_blend=CHROMA_BLEND,
+                use_despill=USE_DESPILL, edge_erosion_passes=CHROMA_EDGE_EROSION_PASSES, avatar_width=AVATAR_WIDTH,
+            )
+
+            cues = []
+            if not no_narration:
+                cues = remotion_bridge.group_into_cues_with_words(
+                    word_timings, FPS,
+                    max_words_per_cue=SUB_MAX_WORDS_PER_CUE, max_chars_per_cue=SUB_MAX_CHARS_PER_CUE,
+                )
+
+            print("  Mezclando audio...")
+            mixed_audio = remotion_bridge.mix_final_audio(
+                video_path, None if no_narration else audio_path, tmp_dir / "mixed_audio.wav",
+                no_narration=no_narration, narration_segments=script_data.get("narration_segments"),
+                background_has_audio=has_audio_stream(video_path), duration_seconds=narration_duration,
+                original_clip_volume=ORIGINAL_CLIP_VOLUME, narration_volume=NARRATION_VOLUME,
+            )
+
+            props = remotion_bridge.build_remotion_props(
+                stem=stem, video_path=video_path, avatar_alpha=avatar_alpha, avatar_position=avatar_position,
+                mixed_audio=mixed_audio, cues=cues, duration_seconds=narration_duration, fps=FPS,
+                title=script_data.get("title"), title_duration=script_data.get("title_duration"), channel=channel,
+                background_duration_seconds=get_duration(video_path), no_narration=no_narration,
+                render_id=tmp_dir.name,
+            )
+
+            print("  Renderizando con Remotion (animaciones, subtítulos kinéticos, cámara)...")
+            remotion_bridge.invoke_remotion_render(props, output_path, tmp_dir)
+
+            actual_duration = get_duration(output_path)
+            if abs(actual_duration - narration_duration) > 0.5:
+                sys.exit(
+                    f"[ERROR remotion] Duración inesperada: {actual_duration:.2f}s "
+                    f"(se esperaba ~{narration_duration:.2f}s)"
+                )
 
         print(f"  Guardado en {output_path}")
     finally:
+        if not legacy_ffmpeg:
+            remotion_bridge.cleanup_staged_assets(tmp_dir.name)
         if keep_temp:
             print(f"  (temporales conservados en {tmp_dir})")
         else:
-            tmp_ctx.cleanup()
+            # En Windows, Chrome (lanzado por Remotion) a veces tarda un
+            # instante de más en soltar el lock de su perfil temporal tras
+            # salir — un solo reintento evita un PermissionError espurio.
+            for attempt in range(3):
+                try:
+                    tmp_ctx.cleanup()
+                    break
+                except PermissionError:
+                    if attempt == 2:
+                        raise
+                    time.sleep(1.0)
 
 
 def find_work_stems() -> list:
@@ -975,9 +1304,16 @@ def main():
     parser.add_argument("--keep-temp", action="store_true", help="No borra los ficheros temporales (útil para depurar)")
     parser.add_argument("--force-sprites", action="store_true",
                          help="Usa la animación local por sprites aunque ya exista un avatar de IA generado antes")
+    parser.add_argument("--legacy-ffmpeg", action="store_true",
+                         help="Usa la composición antigua (un solo filtro de ffmpeg, sin animaciones de Remotion)")
+    parser.add_argument("--no-emotion-avatar", action="store_true",
+                         help="Ignora el modo 'caras por emoción' aunque existan los sprites, y anima el avatar "
+                              "por sprite-swap de volumen (boca moviéndose de verdad + parpadeos). Útil en "
+                              "vídeos largos donde Claude agrupa casi todo el guion en un único tramo de "
+                              "emoción, dejando al gato con la misma cara fija minuto y medio seguido.")
     args = parser.parse_args()
 
-    check_tools()
+    check_tools(legacy_ffmpeg=args.legacy_ffmpeg)
 
     if not AUDIO_DIR.exists() and not SCRIPT_DIR.exists():
         sys.exit(f"No existe la carpeta {AUDIO_DIR}. Ejecuta antes text_to_speech.py.")
@@ -1003,7 +1339,8 @@ def main():
 
         print(f"\n{stem}")
         try:
-            process_one(stem, args.keep_temp, force_sprites=args.force_sprites)
+            process_one(stem, args.keep_temp, force_sprites=args.force_sprites, legacy_ffmpeg=args.legacy_ffmpeg,
+                        no_emotion_avatar=args.no_emotion_avatar)
             log[key] = {"status": "ok", "output": str(OUTPUT_DIR / f'{stem}.mp4')}
             processed_count += 1
         except SystemExit as e:

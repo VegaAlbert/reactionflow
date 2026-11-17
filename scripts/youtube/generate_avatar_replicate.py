@@ -138,10 +138,14 @@ def generate_avatar_clip(client, audio_path: Path, output_path: Path) -> bool:
                 },
             )
 
-        print(f"  Predicción enviada ({prediction.id}), esperando...")
+        print(f"  Predicción enviada ({prediction.id}), esperando "
+              "(un vídeo puede tardar varios minutos, no son imágenes)...")
+        elapsed = 0
         while prediction.status not in ("succeeded", "failed", "canceled"):
             time.sleep(POLL_INTERVAL_SECONDS)
+            elapsed += POLL_INTERVAL_SECONDS
             prediction = client.predictions.get(prediction.id)
+            print(f"  ...sigue en '{prediction.status}' ({elapsed}s)")
 
         if prediction.status != "succeeded":
             print(f"  [ERROR] La predicción {prediction.id} terminó como '{prediction.status}': {prediction.error}")
