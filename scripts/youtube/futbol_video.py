@@ -96,10 +96,13 @@ def run(cmd: list) -> None:
 # ----------------------------------------------------------------------------
 
 
-def generar_voz(frases: list[tuple[str, str]], carpeta: Path, prueba: bool, rehacer: bool) -> list[Path]:
-    """Un audio por frase (clave, texto). Devuelve las rutas en el mismo orden."""
+def generar_voz(frases: list[tuple[str, str]], carpeta: Path, prueba: bool, rehacer: bool,
+                libre: bool = False) -> list[Path]:
+    """Un audio por frase (clave, texto). Devuelve las rutas en el mismo orden.
+    prueba: voz robótica de espeak-ng; libre: voz de gato gratuita (Kokoro,
+    ver voz_gato_libre.py); si no, la voz del gato de ElevenLabs."""
     carpeta.mkdir(parents=True, exist_ok=True)
-    ext = "wav" if prueba else "mp3"
+    ext = "wav" if (prueba or libre) else "mp3"
     # El nombre lleva un resumen del texto: si cambias lo que dice el gato de
     # un jugador, se genera un audio nuevo en vez de reutilizar el viejo.
     rutas = [
@@ -108,6 +111,14 @@ def generar_voz(frases: list[tuple[str, str]], carpeta: Path, prueba: bool, reha
     ]
     pendientes = [(r, t) for r, (_, t) in zip(rutas, frases) if rehacer or not r.exists()]
     if not pendientes:
+        return rutas
+
+    if libre:
+        import voz_gato_libre
+
+        for ruta, texto in pendientes:
+            print(f"  Voz libre: {ruta.name}")
+            voz_gato_libre.generar(texto, ruta)
         return rutas
 
     if prueba:
@@ -143,7 +154,11 @@ def montar_narracion(audios: list[Path], tmp: Path, con_miau: bool) -> tuple[Pat
     silencio = np.zeros(int(PAUSA_ENTRE_FRASES * SAMPLE_RATE), dtype=np.int16)
     partes, tramos, t = [], [], 0.0
 
-    miaus = sorted(INTRO_CLIPS_DIR.glob("*.mp3")) if con_miau and INTRO_CLIPS_DIR.exists() else []
+    import text_to_speech
+
+    # El "Miau" de la voz que narra (voz libre o ElevenLabs), ver text_to_speech.
+    intro_dir = text_to_speech.intro_clips_dir_for(None)
+    miaus = sorted(intro_dir.glob("*.mp3")) if con_miau and intro_dir.exists() else []
     if miaus:
         miau = leer_como_array(random.choice(miaus), tmp)
         partes += [miau, silencio]

@@ -21,6 +21,7 @@ Uso (desde la carpeta scripts/youtube; normalmente desde menu.py, opción 9):
     python shorts_animados.py shorts/gta6
     python shorts_animados.py shorts/gta6 --solo 01_hora
     python shorts_animados.py shorts/gta6 --voz-prueba   # voz robótica local, sin gastar ElevenLabs
+    python shorts_animados.py shorts/gta6 --voz-libre    # voz de gato gratuita (Kokoro), sin ElevenLabs
 
 Salida: final/<pack>/<id>.mp4 y final/<pack>/publicar.txt (títulos,
 descripciones y hashtags listos para copiar).
@@ -542,7 +543,8 @@ def componer(video_mudo: Path, gato: Path | None, narracion: Path, subtitulos: P
             "-c:a", "aac", "-b:a", "192k", "-shortest", str(salida)])
 
 
-def hacer_video(pack: dict, video: dict, carpeta_salida: Path, prueba: bool, rehacer: bool, sin_gato: bool) -> Path:
+def hacer_video(pack: dict, video: dict, carpeta_salida: Path, prueba: bool, rehacer: bool, sin_gato: bool,
+                libre: bool = False) -> Path:
     vid = video["id"]
     con_gato = video.get("gato", False) and not sin_gato
     tmp = TMP_DIR / carpeta_salida.name / vid
@@ -551,7 +553,9 @@ def hacer_video(pack: dict, video: dict, carpeta_salida: Path, prueba: bool, reh
 
     print(f"\n=== {vid}: {video.get('titulo_publicacion', '')} ===")
     print("  1/5 Voz...")
-    audios = fv.generar_voz(frases, tmp / ("voz_prueba" if prueba else "voz"), prueba, rehacer)
+    carpeta_voz = tmp / ("voz_libre" if libre else "voz_prueba" if prueba else "voz")
+    audios = fv.generar_voz(frases, carpeta_voz, prueba, rehacer, libre=libre)
+    # El "Miau" sale de la carpeta de la voz que narra (ver text_to_speech.intro_clips_dir_for).
     narracion, tramos = fv.montar_narracion(audios, tmp, con_miau=con_gato)
     duracion = tramos[-1][1] + fv.FINAL_EXTRA
     if duracion > fv.DURACION_MAXIMA:
@@ -600,6 +604,8 @@ def main():
     parser.add_argument("pack", type=Path, help="Carpeta del pack (p.ej. shorts/gta6)")
     parser.add_argument("--solo", help="Solo el vídeo con este id (p.ej. 01_hora)")
     parser.add_argument("--voz-prueba", action="store_true", help="Voz robótica local (espeak-ng), sin ElevenLabs")
+    parser.add_argument("--voz-libre", action="store_true",
+                        help="Voz de gato gratuita (Kokoro, sin ElevenLabs; ver voz_gato_libre.py)")
     parser.add_argument("--rehacer-voz", action="store_true", help="Regenera los audios aunque existan")
     parser.add_argument("--sin-gato", action="store_true", help="Ningún vídeo lleva al gato")
     args = parser.parse_args()
@@ -612,7 +618,8 @@ def main():
     salida = fv.OUTPUT_DIR / carpeta.name
     salida.mkdir(parents=True, exist_ok=True)
 
-    hechos = [hacer_video(pack, v, salida, args.voz_prueba, args.rehacer_voz, args.sin_gato) for v in videos]
+    hechos = [hacer_video(pack, v, salida, args.voz_prueba, args.rehacer_voz, args.sin_gato, args.voz_libre)
+              for v in videos]
     publicar = escribir_publicar(pack, salida)
     print(f"\n{len(hechos)} vídeo(s) en {salida.resolve()}")
     print(f"Títulos y descripciones: {publicar.resolve()}")
