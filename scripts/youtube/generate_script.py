@@ -359,8 +359,14 @@ def main():
     parser.add_argument("--limit", type=int, default=None, help="Máximo de vídeos a procesar en esta pasada")
     parser.add_argument("--only", type=str, default=None, help="Procesa solo el vídeo cuyo nombre de archivo empieza así (sin extensión)")
     parser.add_argument("--skip-filter", action="store_true", help="No comprobar si el clip trae reactor/está montado (para vídeos que ya has elegido tú a propósito)")
+    parser.add_argument("--own-script", action="store_true",
+                         help="No generar ningún borrador con Claude (ni el filtro reactor/montado): "
+                              "deja el guion vacío para que lo escribas tú en el menú. No gasta nada de la API de Anthropic.")
     parser.add_argument("--dry-run", action="store_true", help="Solo transcribe y muestra info, sin llamar a Claude")
     args = parser.parse_args()
+
+    if args.own_script:
+        args.skip_filter = True  # el filtro reactor/montado también usa Claude
 
     load_dotenv()
 
@@ -368,7 +374,7 @@ def main():
 
     entorno.cargar_env()
     api_key = os.getenv("ANTHROPIC_API_KEY")
-    if not api_key and not args.dry_run:
+    if not api_key and not args.dry_run and not args.own_script:
         sys.exit("Falta ANTHROPIC_API_KEY en el .env. Revisa .env.example.")
 
     if not INPUT_DIR.exists():
@@ -379,11 +385,11 @@ def main():
     whisper_model = WhisperModel(WHISPER_MODEL_SIZE, device="cpu", compute_type="int8")
 
     client = None
-    if not args.dry_run:
+    if not args.dry_run and not args.own_script:
         import anthropic
         client = anthropic.Anthropic(api_key=api_key)
 
-    style_context = "" if args.dry_run else build_style_context(load_style_profile())
+    style_context = "" if (args.dry_run or args.own_script) else build_style_context(load_style_profile())
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     log = load_log()
@@ -436,13 +442,16 @@ def main():
                     log[key] = {"status": "discarded_montado"}
                     continue
 
-            print("  Generando guion con Claude...")
-            script_text = generate_reaction_script(
-                client, frame_paths, transcript, duration, filepath.stem,
-                style_context=style_context,
-            )
-
-            print(f"  Guion: \"{script_text[:100]}...\"")
+            if args.own_script:
+                print("  (guion propio: no se llama a Claude, lo escribirás tú en el menú)")
+                script_text = ""
+            else:
+                print("  Generando guion con Claude...")
+                script_text = generate_reaction_script(
+                    client, frame_paths, transcript, duration, filepath.stem,
+                    style_context=style_context,
+                )
+                print(f"  Guion: \"{script_text[:100]}...\"")
 
             output_path = OUTPUT_DIR / f"{filepath.stem}.json"
             with open(output_path, "w", encoding="utf-8") as f:

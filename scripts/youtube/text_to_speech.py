@@ -69,6 +69,21 @@ VOICE_STYLE = 0.6           # más alto = más "actuado"/exagerado, útil para d
 # ponlos en esta carpeta con cualquier nombre (se cogen todos los .mp3 de aquí).
 INTRO_CLIPS_DIR = Path("./assets/gato_intros")
 
+# Voz secundaria opcional (menu.py pregunta cuál usar por vídeo, ver
+# ask_elevenlabs_voice): cada voz tiene su propia carpeta de "Miau", grabados
+# con esa misma voz — si no, sonaría el sello con la voz 1 encima de una
+# narración con la voz 2. Genera el set de una voz nueva con:
+#   python generate_miau_options.py --voice-id TU_VOICE_ID --output-dir ./assets/gato_intros_TU_NOMBRE
+# y añade la entrada aquí.
+SECONDARY_ELEVENLABS_VOICE_ID = "DUnzBkwtjRWXPr6wRbmL"
+INTRO_CLIPS_DIR_BY_VOICE = {
+    SECONDARY_ELEVENLABS_VOICE_ID: Path("./assets/gato_intros_voice2"),
+}
+
+
+def intro_clips_dir_for(voice_id: str | None) -> Path:
+    return INTRO_CLIPS_DIR_BY_VOICE.get(voice_id, INTRO_CLIPS_DIR)
+
 # ----------------------------------------------------------------------------
 
 
@@ -101,16 +116,19 @@ def get_elevenlabs_client():
     return ElevenLabs(api_key=api_key), voice_id
 
 
-def prepend_intro_clip(narration_path: Path) -> None:
-    """Pega un 'Miau' elegido al azar (de INTRO_CLIPS_DIR) delante de la
-    narración generada, sustituyendo el archivo original por la versión
-    combinada. No hace nada si no hay clips de intro disponibles todavía."""
+def prepend_intro_clip(narration_path: Path, voice_id: str | None = None) -> None:
+    """Pega un 'Miau' elegido al azar delante de la narración generada,
+    sustituyendo el archivo original por la versión combinada. Usa la
+    carpeta de Miaus de la voz indicada (intro_clips_dir_for) para que el
+    sello suene coherente con quien narra — por defecto INTRO_CLIPS_DIR (voz
+    de siempre). No hace nada si no hay clips de intro disponibles todavía."""
     import random
 
-    available_clips = list(INTRO_CLIPS_DIR.glob("*.mp3")) if INTRO_CLIPS_DIR.exists() else []
+    intro_dir = intro_clips_dir_for(voice_id)
+    available_clips = list(intro_dir.glob("*.mp3")) if intro_dir.exists() else []
 
     if not available_clips:
-        print(f"  [AVISO] No hay clips en {INTRO_CLIPS_DIR}, se deja el audio sin 'Miau' inicial.")
+        print(f"  [AVISO] No hay clips en {intro_dir}, se deja el audio sin 'Miau' inicial.")
         return
 
     chosen_clip = random.choice(available_clips)
@@ -158,6 +176,12 @@ def generate_speech(client, voice_id: str, text: str, output_path: Path) -> bool
         return True
     except Exception as e:
         print(f"  [ERROR] No se pudo generar audio: {e}")
+        # audio.convert() puede fallar A MITAD de iterar los chunks (p.ej.
+        # cuota agotada de ElevenLabs) — para entonces el archivo ya está
+        # creado (aunque sea de 0 bytes o a medias). Sin borrarlo, el resto
+        # del pipeline lo confunde con una narración válida y explota más
+        # adelante con un error críptico.
+        output_path.unlink(missing_ok=True)
         return False
 
 
@@ -166,12 +190,16 @@ def main():
     parser.add_argument("--limit", type=int, default=None, help="Máximo de guiones a procesar")
     parser.add_argument("--only", type=str, default=None, help="Procesa solo el guion cuyo nombre de archivo empieza así (sin extensión)")
     parser.add_argument("--dry-run", action="store_true", help="Solo muestra qué se generaría, sin llamar a la API")
+    parser.add_argument("--voice-id", type=str, default=None,
+                         help="Voice ID de ElevenLabs a usar en vez del ELEVENLABS_VOICE_ID del .env (para probar otra voz en un vídeo concreto)")
     args = parser.parse_args()
 
     if not INPUT_DIR.exists():
         sys.exit(f"No existe la carpeta {INPUT_DIR}. Ejecuta antes generate_script.py.")
 
     client, voice_id = (None, None) if args.dry_run else get_elevenlabs_client()
+    if args.voice_id:
+        voice_id = args.voice_id
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     log = load_log()
@@ -211,7 +239,7 @@ def main():
         success = generate_speech(client, voice_id, script_text, output_path)
 
         if success:
-            prepend_intro_clip(output_path)
+            prepend_intro_clip(output_path, voice_id)
             print(f"  Guardado en {output_path}")
             log[key] = {"status": "ok", "output": str(output_path)}
             processed_count += 1
@@ -220,6 +248,9 @@ def main():
 
     save_log(log)
     print(f"\nHecho. {processed_count} audios {'validados' if args.dry_run else 'generados'} en esta pasada.")
+
+    if args.only and log.get(f"{args.only}.json", {}).get("status") == "error":
+        sys.exit(1)  # para que quien invoque este script (menu.py) sepa que falló
 
 
 if __name__ == "__main__":
