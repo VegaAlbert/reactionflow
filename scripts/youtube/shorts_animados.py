@@ -555,9 +555,8 @@ def hacer_video(pack: dict, video: dict, carpeta_salida: Path, prueba: bool, reh
     print("  1/5 Voz...")
     carpeta_voz = tmp / ("voz_libre" if libre else "voz_prueba" if prueba else "voz")
     audios = fv.generar_voz(frases, carpeta_voz, prueba, rehacer, libre=libre)
-    # El "Miau" de assets/gato_intros es la voz de ElevenLabs: con la voz libre
-    # no se pone, para no mezclar dos gatos distintos.
-    narracion, tramos = fv.montar_narracion(audios, tmp, con_miau=con_gato and not libre)
+    # El "Miau" sale de la carpeta de la voz que narra (ver text_to_speech.intro_clips_dir_for).
+    narracion, tramos = fv.montar_narracion(audios, tmp, con_miau=con_gato)
     duracion = tramos[-1][1] + fv.FINAL_EXTRA
     if duracion > fv.DURACION_MAXIMA:
         narracion, tramos, duracion = fv.acelerar(narracion, tramos, duracion, tmp)

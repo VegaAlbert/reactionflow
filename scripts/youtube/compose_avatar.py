@@ -62,7 +62,13 @@ from pathlib import Path
 
 import numpy as np
 
-import remotion_bridge
+try:
+    import remotion_bridge
+except ImportError:
+    # remotion_bridge.py y el proyecto de Remotion solo están en el PC donde se
+    # instaló Remotion: sin ellos se compone con ffmpeg (modo --legacy-ffmpeg),
+    # y los demás scripts que importan este módulo siguen funcionando.
+    remotion_bridge = None
 
 # La consola de Windows por defecto usa cp1252, que no soporta emojis ni
 # muchos caracteres. Sin esto, algún carácter raro en un guion o título
@@ -1325,6 +1331,9 @@ def main():
                               "emoción, dejando al gato con la misma cara fija minuto y medio seguido.")
     args = parser.parse_args()
 
+    if remotion_bridge is None and not args.legacy_ffmpeg:
+        print("  [AVISO] No está remotion_bridge.py (Remotion): se compone con ffmpeg (--legacy-ffmpeg).")
+        args.legacy_ffmpeg = True
     check_tools(legacy_ffmpeg=args.legacy_ffmpeg)
 
     if not AUDIO_DIR.exists() and not SCRIPT_DIR.exists():

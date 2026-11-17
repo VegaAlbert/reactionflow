@@ -76,12 +76,28 @@ INTRO_CLIPS_DIR = Path("./assets/gato_intros")
 #   python generate_miau_options.py --voice-id TU_VOICE_ID --output-dir ./assets/gato_intros_TU_NOMBRE
 # y añade la entrada aquí.
 SECONDARY_ELEVENLABS_VOICE_ID = "DUnzBkwtjRWXPr6wRbmL"
+
+# Voz de gato gratuita "GATO_1" (Kokoro, ver voz_gato_libre.py): es la voz por
+# defecto, sin ElevenLabs ni claves. Para volver a ElevenLabs, pon en el .env:
+#   VOZ_GATO=elevenlabs
+LIBRE_VOICE_ID = "kokoro-gato1"
 INTRO_CLIPS_DIR_BY_VOICE = {
     SECONDARY_ELEVENLABS_VOICE_ID: Path("./assets/gato_intros_voice2"),
+    LIBRE_VOICE_ID: Path("./assets/gato_intros_libre"),
 }
 
 
+def usa_voz_libre() -> bool:
+    """True salvo que el .env diga VOZ_GATO=elevenlabs."""
+    load_dotenv()
+    import entorno
+    entorno.cargar_env()
+    return os.getenv("VOZ_GATO", "libre").strip().lower() != "elevenlabs"
+
+
 def intro_clips_dir_for(voice_id: str | None) -> Path:
+    if usa_voz_libre():
+        return INTRO_CLIPS_DIR_BY_VOICE[LIBRE_VOICE_ID]
     return INTRO_CLIPS_DIR_BY_VOICE.get(voice_id, INTRO_CLIPS_DIR)
 
 # ----------------------------------------------------------------------------
@@ -100,6 +116,10 @@ def save_log(log: dict) -> None:
 
 
 def get_elevenlabs_client():
+    """(cliente, voice_id). Con la voz libre (por defecto) no hace falta
+    ElevenLabs: devuelve (None, LIBRE_VOICE_ID) y generate_speech usa Kokoro."""
+    if usa_voz_libre():
+        return None, LIBRE_VOICE_ID
     load_dotenv()
     import entorno  # además del load_dotenv: .env en UTF-16 o variables vacías de Windows
     entorno.cargar_env()
@@ -158,6 +178,17 @@ def prepend_intro_clip(narration_path: Path, voice_id: str | None = None) -> Non
 
 
 def generate_speech(client, voice_id: str, text: str, output_path: Path) -> bool:
+    if client is None or voice_id == LIBRE_VOICE_ID:
+        # Voz libre: aunque el menú pida otra voz de ElevenLabs para un vídeo,
+        # sin cliente se usa siempre la voz de gato gratuita.
+        import voz_gato_libre
+        try:
+            voz_gato_libre.generar(text, Path(output_path))
+            return True
+        except SystemExit as e:
+            print(f"  [ERROR] No se pudo generar audio con la voz libre: {e}")
+            Path(output_path).unlink(missing_ok=True)
+            return False
     try:
         audio = client.text_to_speech.convert(
             voice_id=voice_id,

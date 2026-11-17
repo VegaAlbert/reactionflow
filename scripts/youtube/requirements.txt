@@ -11,3 +11,5 @@ rembg
 onnxruntime
 opencv-python-headless<5
 pillow
+kokoro
+soundfile

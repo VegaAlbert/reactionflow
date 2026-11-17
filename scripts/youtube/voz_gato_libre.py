@@ -23,7 +23,26 @@ VELOCIDAD = 1.05
 SEMITONOS = 5
 EFECTO = "vibrato=f=5.5:d=0.08,highpass=f=120,acompressor"
 
+# Cómo leer palabras en inglés que Kokoro pronuncia a la española. Solo
+# cambia el audio: los subtítulos siguen mostrando el texto original.
+PRONUNCIACION = {
+    "Vice City": "Bais Síti",
+    "Jason": "Yéison",
+    "Rockstar": "Róckstar",
+    "team": "tim",
+    "Ultimate": "Últimeit",
+    "Vintage": "Víntach",
+}
+
 _pipeline = None
+
+
+def para_leer(texto: str) -> str:
+    import re
+
+    for palabra, lectura in PRONUNCIACION.items():
+        texto = re.sub(rf"\b{re.escape(palabra)}\b", lectura, texto, flags=re.IGNORECASE)
+    return texto
 
 
 def _kokoro():
@@ -42,7 +61,7 @@ def generar(texto: str, salida: Path) -> None:
     import numpy as np
     import soundfile as sf
 
-    partes = [audio for _, _, audio in _kokoro()(texto, voice=VOZ_KOKORO, speed=VELOCIDAD)]
+    partes = [audio for _, _, audio in _kokoro()(para_leer(texto), voice=VOZ_KOKORO, speed=VELOCIDAD)]
     if not partes:
         raise SystemExit(f"Kokoro no generó audio para: {texto!r}")
     with tempfile.TemporaryDirectory() as tmp:
