@@ -32,6 +32,19 @@ PRONUNCIACION = {
     "team": "tim",
     "Ultimate": "Últimeit",
     "Vintage": "Víntach",
+    "Ocarina of Time": "Ocarina of Taim",
+    "Metacritic": "Métacritic",
+    "IGN": "Ai Yi En",
+    "Game Informer": "Guéim Infórmer",
+    "Game Awards": "Guéim Awórds",
+    "Windows Central": "Uíndous Séntral",
+    "Digital Foundry": "Díyital Fáundri",
+    "Sensor Tower": "Sénsor Táuer",
+    "PlayStation": "Pléisteishon",
+    "Xbox": "Ékisbox",
+    "streamer": "estrímer",
+    "MeowSparky": "Miau Spárki",
+    "Remote": "Rimóut",
 }
 
 _pipeline = None

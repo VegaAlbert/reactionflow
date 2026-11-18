@@ -11,11 +11,19 @@ tiene lo que dice el gato ("voz") y qué se ve mientras lo dice ("tipo"):
     dato      cifra o palabra gigante        {"grande", "texto"}  (los números cuentan hacia arriba)
     lista     puntos que van apareciendo     {"titulo", "items", "marca": "si"|"no"}
     comparar  dos tarjetas enfrentadas       {"izq": {...}, "der": {...}} con "titulo", "grande", "nota"
-    cita      frase que se escribe sola      {"texto"}
+    cita      frase que se escribe sola      {"texto", "autor" opcional}
     cierre    pregunta final + "comenta"     {"texto"}
+    foto      solo la imagen de fondo        {"texto", "sub"} opcionales (rótulo abajo)
 
 Cada escena dura lo que tarda el gato en decir su "voz". Los fondos se
-dibujan por código (atardecer, noche, playa): no se usan imágenes de nadie.
+dibujan por código (atardecer, noche, playa)... salvo que la escena lleve
+"imagen": entonces el fondo es esa imagen real, con un zoom lento (efecto
+Ken Burns) y oscurecida para que se lea el texto. "foco" (0 a 1) dice qué
+parte de la imagen horizontal se ve en el vídeo vertical (0,5 = el centro).
+
+Las imágenes se buscan en <pack>/fotos/ y en assets/capturas/<carpeta>/. Si el
+pack tiene "capturas": {"carpeta": ..., "zip": url, "credito": ...} y faltan,
+se descarga el zip (p.ej. el kit de prensa oficial de Rockstar) la primera vez.
 
 Uso (desde la carpeta scripts/youtube; normalmente desde menu.py, opción 9):
     python shorts_animados.py shorts/gta6
@@ -45,6 +53,7 @@ import futbol_video as fv  # hace chdir a la carpeta del script
 W, H, FPS = 1080, 1920, 30
 PAN = 220  # px que se desplaza el fondo hacia arriba a lo largo del vídeo
 TMP_DIR = Path("./shorts_tmp")
+CAPTURAS_DIR = Path("./assets/capturas")
 FUENTE_TITULAR = Path("./assets/fonts/Anton-Regular.ttf")
 
 # Zona útil: TikTok/Shorts tapan los bordes (arriba el menú, abajo el texto
@@ -287,6 +296,89 @@ def dibujar_fondo(nombre: str) -> Image.Image:
 
 
 # ----------------------------------------------------------------------------
+# Fondos con imagen real
+# ----------------------------------------------------------------------------
+
+
+def descargar_capturas(url: str, carpeta: Path) -> None:
+    """Descarga un zip de imágenes y guarda solo los .jpg/.png, sin subcarpetas."""
+    import io
+    import urllib.request
+    import zipfile
+
+    print(f"  Descargando imágenes (solo la primera vez): {url}")
+    with urllib.request.urlopen(url, timeout=600) as r:
+        datos = r.read()
+    carpeta.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(io.BytesIO(datos)) as z:
+        for nombre in z.namelist():
+            base = Path(nombre).name
+            if base.lower().endswith((".jpg", ".jpeg", ".png")) and not base.startswith("."):
+                (carpeta / base).write_bytes(z.read(nombre))
+
+
+def buscar_imagen(pack: dict, carpeta_pack: Path, nombre: str) -> Path:
+    capturas = pack.get("capturas", {})
+    sitios = [carpeta_pack / "fotos"]
+    if capturas.get("carpeta"):
+        sitios.append(CAPTURAS_DIR / capturas["carpeta"])
+
+    def buscar():
+        for sitio in sitios:
+            for ext in ("", ".jpg", ".jpeg", ".png"):
+                if (sitio / (nombre + ext)).is_file():
+                    return sitio / (nombre + ext)
+        return None
+
+    ruta = buscar()
+    if ruta is None and capturas.get("zip") and capturas.get("carpeta"):
+        descargar_capturas(capturas["zip"], CAPTURAS_DIR / capturas["carpeta"])
+        ruta = buscar()
+    if ruta is None:
+        sys.exit(f"[ERROR] No encuentro la imagen '{nombre}' (busco en: {', '.join(str(s) for s in sitios)})")
+    return ruta
+
+
+def velo_oscuro(fuerza: float) -> Image.Image:
+    """Oscurece la imagen: más arriba (sello) y abajo (subtítulos), menos en el centro."""
+    alfa = np.empty(H, dtype=np.float32)
+    y = np.arange(H) / H
+    alfa[:] = fuerza + 0.45 * np.clip((0.22 - y) / 0.22, 0, 1) + 0.55 * np.clip((y - 0.62) / 0.38, 0, 1)
+    mascara = Image.fromarray((np.clip(alfa, 0, 0.92)[:, None].repeat(W, 1) * 255).astype(np.uint8), "L")
+    capa = Image.new("RGBA", (W, H), OSCURO + (255,))
+    capa.putalpha(mascara)
+    return capa
+
+
+class FondoFoto:
+    """Imagen real a pantalla completa con zoom lento y un poco de desplazamiento."""
+
+    ZOOM = 1.12
+
+    def __init__(self, ruta: Path, foco: float, fuerza: float):
+        img = Image.open(ruta)
+        alto = int(H * self.ZOOM)
+        img.draft("RGB", (int(img.width * alto / img.height), alto))
+        img = img.convert("RGB")
+        escala = max(alto / img.height, W * self.ZOOM / img.width)
+        self.img = img.resize((int(img.width * escala), int(img.height * escala)), Image.LANCZOS)
+        self.foco = min(max(foco, 0.0), 1.0)
+        self.velo = velo_oscuro(fuerza)
+
+    def frame(self, t: float, dur: float) -> Image.Image:
+        p = min(max(t / max(dur, 0.1), 0.0), 1.0)
+        z = 1 + (self.ZOOM - 1) * (1 - p)  # se va acercando poco a poco
+        ancho = min(W * self.ZOOM / z, self.img.width)
+        alto = min(H * self.ZOOM / z, self.img.height)
+        cx = self.foco * self.img.width + (p - 0.5) * 0.04 * self.img.width
+        x0 = min(max(cx - ancho / 2, 0), self.img.width - ancho)
+        y0 = max((self.img.height - alto) / 2, 0)
+        lienzo = self.img.resize((W, H), Image.BILINEAR, box=(x0, y0, x0 + ancho, y0 + alto)).convert("RGBA")
+        lienzo.alpha_composite(self.velo)
+        return lienzo
+
+
+# ----------------------------------------------------------------------------
 # Escenas: elementos animados
 # ----------------------------------------------------------------------------
 
@@ -413,7 +505,10 @@ class Escena:
             info = self.d[lado]
             tarjeta = panel(ancho_t, 560, borde=borde)
             td = ImageDraw.Draw(tarjeta)
-            td.text((medio, 70), info["titulo"].upper(), font=fuente_texto(48), fill=borde + (255,), anchor="mm")
+            ft = fuente_texto(48)
+            while ft.getlength(info["titulo"].upper()) > ancho_t - 50 and ft.size > 26:
+                ft = fuente_texto(ft.size - 2)
+            td.text((medio, 70), info["titulo"].upper(), font=ft, fill=borde + (255,), anchor="mm")
             # La cifra no puede pasar del hueco libre a los lados del "VS".
             f = ajustar_fuente(info["grande"], 330, 140, 44)
             capa = capa_texto(info["grande"], f, ancho_max=330, brillo=borde, contorno=3)
@@ -450,6 +545,9 @@ class Escena:
                     d.text((W / 2 - fuente.getlength(l) / 2, y0 + i * alto_linea), visible, font=fuente,
                            fill=BLANCO, stroke_width=2, stroke_fill=OSCURO)
         self.dinamicos.append(maquina)
+        if self.d.get("autor"):
+            autor = capa_texto("— " + self.d["autor"], fuente_titular(60), color=a2, brillo=a2, contorno=3)
+            self.elementos.append(Elemento(autor, W / 2, CENTRO_Y + fondo.height / 2 + 70, 0.6, "subir"))
 
     def montar_cierre(self):
         a, a2 = self.pal["acento"], self.pal["acento2"]
@@ -471,6 +569,19 @@ class Escena:
         self.dinamicos.append(latido)
 
 
+    def montar_foto(self):
+        a, a2 = self.pal["acento"], self.pal["acento2"]
+        y = CENTRO_Y + 260
+        if self.d.get("texto"):
+            tit = capa_texto(self.d["texto"].upper(), ajustar_fuente(self.d["texto"].upper(), 900, 120, 70),
+                             ancho_max=900, brillo=a, contorno=4)
+            self.elementos.append(Elemento(tit, W / 2, y, 0.1, "subir"))
+            y += tit.height / 2 + 50
+        if self.d.get("sub"):
+            sub = capa_texto(self.d["sub"], fuente_texto(56), color=a2, ancho_max=900, contorno=3)
+            self.elementos.append(Elemento(sub, W / 2, y, 0.4, "subir"))
+
+
 # ----------------------------------------------------------------------------
 # Render del vídeo
 # ----------------------------------------------------------------------------
@@ -486,14 +597,19 @@ def etiqueta_marca(pal: dict, texto: str) -> Image.Image:
     return capa
 
 
-def renderizar(video: dict, tramos: list, duracion: float, salida: Path, marca: str) -> None:
+def renderizar(video: dict, tramos: list, duracion: float, salida: Path, marca: str,
+               imagenes: dict | None = None, credito: str = "") -> None:
+    """`imagenes`: {nº de escena: ruta} para las escenas con fondo de imagen real."""
     pal = PALETAS[video.get("paleta", "atardecer")]
     fondo = dibujar_fondo(video.get("paleta", "atardecer"))
     escenas_d = video["escenas"]
     inicios = [0.0] + [tramos[i][0] for i in range(1, len(escenas_d))]
     finales = inicios[1:] + [duracion]
     escenas = [Escena(e, pal, fin - ini) for e, ini, fin in zip(escenas_d, inicios, finales)]
+    fotos = {i: FondoFoto(ruta, escenas_d[i].get("foco", 0.5), 0.12 if escenas_d[i]["tipo"] == "foto" else 0.42)
+             for i, ruta in (imagenes or {}).items()}
     sello = etiqueta_marca(pal, marca)
+    rotulo_credito = capa_texto(credito, fuente_texto(30), color=(230, 230, 230), contorno=2) if credito else None
 
     proc = subprocess.Popen(
         ["ffmpeg", "-y", "-v", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}",
@@ -507,10 +623,15 @@ def renderizar(video: dict, tramos: list, duracion: float, salida: Path, marca: 
         t = n / FPS
         while k + 1 < len(escenas) and t >= inicios[k + 1]:
             k += 1
-        y = int(PAN * t / max(duracion, 0.1))
-        lienzo = fondo.crop((0, y, W, y + H)).convert("RGBA")
+        if k in fotos:
+            lienzo = fotos[k].frame(t - inicios[k], finales[k] - inicios[k])
+        else:
+            y = int(PAN * t / max(duracion, 0.1))
+            lienzo = fondo.crop((0, y, W, y + H)).convert("RGBA")
         escenas[k].pintar(lienzo, t - inicios[k])
         lienzo.alpha_composite(sello, (int(W / 2 - sello.width / 2), 120))
+        if k in fotos and rotulo_credito:
+            lienzo.alpha_composite(rotulo_credito, (int(W / 2 - rotulo_credito.width / 2), 210))
         d = ImageDraw.Draw(lienzo)
         d.rectangle([0, 0, int(W * t / duracion), 10], fill=pal["acento"] + (255,))
         destello = 1 - (t - inicios[k]) / 0.15
@@ -544,7 +665,7 @@ def componer(video_mudo: Path, gato: Path | None, narracion: Path, subtitulos: P
 
 
 def hacer_video(pack: dict, video: dict, carpeta_salida: Path, prueba: bool, rehacer: bool, sin_gato: bool,
-                libre: bool = False) -> Path:
+                libre: bool = False, carpeta_pack: Path | None = None) -> Path:
     vid = video["id"]
     con_gato = video.get("gato", False) and not sin_gato
     tmp = TMP_DIR / carpeta_salida.name / vid
@@ -552,6 +673,9 @@ def hacer_video(pack: dict, video: dict, carpeta_salida: Path, prueba: bool, reh
     frases = [(f"escena{i + 1}", e["voz"]) for i, e in enumerate(video["escenas"])]
 
     print(f"\n=== {vid}: {video.get('titulo_publicacion', '')} ===")
+    # Imágenes primero: si falta alguna, mejor saberlo antes de generar la voz.
+    imagenes = {i: buscar_imagen(pack, carpeta_pack or Path("."), e["imagen"])
+                for i, e in enumerate(video["escenas"]) if e.get("imagen")}
     print("  1/5 Voz...")
     carpeta_voz = tmp / ("voz_libre" if libre else "voz_prueba" if prueba else "voz")
     audios = fv.generar_voz(frases, carpeta_voz, prueba, rehacer, libre=libre)
@@ -572,7 +696,8 @@ def hacer_video(pack: dict, video: dict, carpeta_salida: Path, prueba: bool, reh
 
     print("  3/5 Animación...")
     mudo = tmp / "animacion.mp4"
-    renderizar(video, tramos, duracion, mudo, pack.get("marca", "GTA VI · 19 NOV"))
+    renderizar(video, tramos, duracion, mudo, pack.get("marca", "GTA VI · 19 NOV"), imagenes,
+               pack.get("capturas", {}).get("credito", ""))
 
     gato = None
     if con_gato:
@@ -618,7 +743,7 @@ def main():
     salida = fv.OUTPUT_DIR / carpeta.name
     salida.mkdir(parents=True, exist_ok=True)
 
-    hechos = [hacer_video(pack, v, salida, args.voz_prueba, args.rehacer_voz, args.sin_gato, args.voz_libre)
+    hechos = [hacer_video(pack, v, salida, args.voz_prueba, args.rehacer_voz, args.sin_gato, args.voz_libre, carpeta)
               for v in videos]
     publicar = escribir_publicar(pack, salida)
     print(f"\n{len(hechos)} vídeo(s) en {salida.resolve()}")

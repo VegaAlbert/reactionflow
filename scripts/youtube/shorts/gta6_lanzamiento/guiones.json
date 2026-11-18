@@ -1,0 +1,137 @@
+{
+  "pack": "GTA 6 — ya ha salido: lo último del lanzamiento (18-19 de noviembre de 2026)",
+  "datos_a": "2026-11-18",
+  "marca": "GTA VI · YA A LA VENTA",
+  "capturas": {
+    "carpeta": "gta6",
+    "zip": "https://media-rockstargames-com.akamaized.net/VI/downloads/screenshots/GTAVI_Screenshots.zip",
+    "credito": "Imágenes: Rockstar Games"
+  },
+  "fuentes": [
+    "Imágenes: capturas oficiales del kit de prensa de Rockstar Games (rockstargames.com/VI/downloads)",
+    "Nota media 99 con unos 100 análisis, empate con Ocarina of Time; GTA IV 98 y GTA V 97: Metacritic (18 nov 2026; la media puede moverse)",
+    "Análisis: IGN (10), Game Informer (10), Kotaku, Windows Central",
+    "30 fps bloqueados también en PS5 Pro, sin modo de 40 fps, límite de CPU: Digital Foundry, Push Square, Kotaku",
+    "Nueva Zelanda primero (medianoche local), streamer MeowSparky; 'truco de Nueva Zelanda' no confirmado por Rockstar ni Microsoft",
+    "Más de 15 M de reservas y más de 1.500 M$: estimación de Sensor Tower",
+    "+32 % de peticiones de días libres para el 19 de noviembre: Remote",
+    "8 nominaciones a The Game Awards (gala el 10 de diciembre)"
+  ],
+  "videos": [
+    {
+      "id": "01_metacritic_99",
+      "gato": true,
+      "paleta": "noche",
+      "titulo_publicacion": "GTA 6 tiene un 99 en Metacritic 🤯 empata con Zelda Ocarina of Time",
+      "descripcion": "GTA 6 ya tiene nota: 99 en Metacritic con unos 100 análisis, ninguno negativo. Empata con Zelda: Ocarina of Time y supera a GTA IV (98) y GTA V (97). Dato del 18 de noviembre: la media puede cambiar. Imágenes: Rockstar Games.",
+      "hashtags": "#gta6 #gtavi #metacritic #rockstargames #gaming #parati #fyp",
+      "escenas": [
+        {"tipo": "titular", "texto": "GTA 6 YA TIENE NOTA", "sub": "y es de récord", "imagen": "Vice_City_01", "foco": 0.5,
+         "voz": "GTA seis ya tiene nota, y es de récord."},
+        {"tipo": "dato", "grande": "99", "texto": "de media en Metacritic", "imagen": "Vice_City_27", "foco": 0.5,
+         "voz": "Un noventa y nueve de media en Metacritic, con unos cien análisis."},
+        {"tipo": "comparar", "izq": {"titulo": "GTA 6", "grande": "99"}, "der": {"titulo": "Ocarina of Time", "grande": "99"},
+         "imagen": "Vice_City_10", "foco": 0.3,
+         "voz": "Eso es empatar con Zelda Ocarina of Time, el juego mejor valorado de la historia."},
+        {"tipo": "lista", "titulo": "La saga en Metacritic", "items": ["GTA 6: 99", "GTA IV: 98", "GTA V: 97"],
+         "imagen": "Vice_City_15", "foco": 0.5,
+         "voz": "Y supera a sus hermanos: GTA cuatro tiene un noventa y ocho, y GTA cinco un noventa y siete."},
+        {"tipo": "foto", "texto": "Ni una mala crítica", "sub": "ningún análisis mixto ni negativo", "imagen": "Jason_and_Lucia_01", "foco": 0.42,
+         "voz": "Y lo más loco: de momento no tiene ni un solo análisis mixto o negativo."},
+        {"tipo": "cierre", "texto": "¿Se merece el 99?", "imagen": "Jason_and_Lucia_13", "foco": 0.45,
+         "voz": "¿Tú crees que se merece el noventa y nueve? Te leo. ¡Miau!"}
+      ]
+    },
+    {
+      "id": "02_analisis",
+      "gato": false,
+      "paleta": "atardecer",
+      "titulo_publicacion": "Lo que dice la prensa de GTA 6 🔥 \"El juego más impresionante\"",
+      "descripcion": "Los análisis de GTA 6 ya están aquí: IGN y Game Informer le ponen un 10, Kotaku lo llama obra maestra y Windows Central habla de candidato a mejor juego de la historia. Imágenes: Rockstar Games.",
+      "hashtags": "#gta6 #gtavi #review #analisis #ign #gaming #parati",
+      "escenas": [
+        {"tipo": "titular", "texto": "LA PRENSA SE RINDE", "sub": "los análisis de GTA 6", "imagen": "Jason_Duval_17", "foco": 0.45,
+         "voz": "Ya han salido los análisis de GTA seis, y la prensa se ha rendido."},
+        {"tipo": "comparar", "izq": {"titulo": "IGN", "grande": "10"}, "der": {"titulo": "Game Informer", "grande": "10"},
+         "imagen": "Vice_City_11", "foco": 0.4,
+         "voz": "IGN y Game Informer le ponen un diez. La nota perfecta."},
+        {"tipo": "cita", "texto": "El videojuego más impresionante que he jugado nunca", "autor": "IGN", "imagen": "Lucia_Caminos_13", "foco": 0.42,
+         "voz": "IGN dice que es el videojuego más impresionante que ha jugado nunca."},
+        {"tipo": "cita", "texto": "Una obra maestra del diseño de mundo abierto", "autor": "Kotaku", "imagen": "Leonida_Keys_01", "foco": 0.5,
+         "voz": "Para Kotaku, es una obra maestra del diseño de mundo abierto."},
+        {"tipo": "cita", "texto": "Posiblemente, candidato a mejor juego de la historia", "autor": "Windows Central", "imagen": "Jason_and_Lucia_09", "foco": 0.55,
+         "voz": "Y Windows Central va más allá: posiblemente, candidato a mejor juego de la historia."},
+        {"tipo": "cierre", "texto": "¿Le darías un 10?", "imagen": "Jason_and_Lucia_16", "foco": 0.3,
+         "voz": "¿Y tú, le darías un diez? ¡Miau!"}
+      ]
+    },
+    {
+      "id": "03_30fps",
+      "gato": true,
+      "paleta": "noche",
+      "titulo_publicacion": "GTA 6 va a 30 FPS… también en PS5 Pro 😬",
+      "descripcion": "GTA 6 funciona a 30 fps bloqueados en consola, también en PS5 Pro, y sin modo de 40 fps. Según Digital Foundry, el límite es la CPU. Aun así, la crítica le da un 99. Imágenes: Rockstar Games.",
+      "hashtags": "#gta6 #gtavi #ps5pro #fps #digitalfoundry #gaming #parati",
+      "escenas": [
+        {"tipo": "titular", "texto": "GTA 6 A 30 FPS", "sub": "sí, también en PS5 Pro", "imagen": "Jason_Duval_11", "foco": 0.55,
+         "voz": "Confirmado: GTA seis va a treinta fotogramas por segundo, también en PlayStation cinco Pro."},
+        {"tipo": "dato", "grande": "30", "texto": "fotogramas por segundo, bloqueados", "imagen": "Vice_City_17", "foco": 0.5,
+         "voz": "Treinta, bloqueados, en todas las consolas."},
+        {"tipo": "lista", "titulo": "Lo que no tiene", "marca": "no", "items": ["Modo de 60 fps", "Modo de 40 fps", "Mejora en PS5 Pro"],
+         "imagen": "Grassrivers_04", "foco": 0.5,
+         "voz": "No hay modo de sesenta, ni siquiera uno de cuarenta, y la Pro no lo mejora."},
+        {"tipo": "foto", "texto": "¿Por qué?", "sub": "límite de CPU, según Digital Foundry", "imagen": "Ambrosia_01", "foco": 0.5,
+         "voz": "¿Por qué? Según Digital Foundry, el límite está en el procesador, con tanta gente y tráfico en la calle."},
+        {"tipo": "foto", "texto": "Y aun así…", "sub": "99 en Metacritic", "imagen": "Leonida_Keys_05", "foco": 0.5,
+         "voz": "Y aun así, la prensa le pone un noventa y nueve: se ve espectacular."},
+        {"tipo": "cierre", "texto": "¿Te importan los 30 fps?", "imagen": "Lucia_Caminos_07", "foco": 0.5,
+         "voz": "¿A ti te importan los treinta fotogramas, o te da igual? ¡Miau!"}
+      ]
+    },
+    {
+      "id": "04_nueva_zelanda",
+      "gato": false,
+      "paleta": "playa",
+      "titulo_publicacion": "Ya hay gente jugando a GTA 6 🌏 ¿y el truco de Nueva Zelanda?",
+      "descripcion": "GTA 6 se desbloquea por zonas horarias: Nueva Zelanda fue la primera en jugar. El 'truco de Nueva Zelanda' (cambiar la región de Xbox) no está confirmado por Rockstar ni Microsoft y podría tener riesgos. En España se desbloquea a las 00:00 del 19 de noviembre. Imágenes: Rockstar Games.",
+      "hashtags": "#gta6 #gtavi #nuevazelanda #lanzamiento #xbox #ps5 #parati",
+      "escenas": [
+        {"tipo": "titular", "texto": "YA HAY GENTE JUGANDO", "sub": "a GTA 6", "imagen": "Vice_City_15", "foco": 0.5,
+         "voz": "Ya hay gente jugando a GTA seis. ¿Dónde? En Nueva Zelanda."},
+        {"tipo": "foto", "texto": "Medianoche", "sub": "hora de Nueva Zelanda: los primeros del mundo", "imagen": "Leonida_Keys_01", "foco": 0.5,
+         "voz": "El juego se desbloquea a medianoche de cada país, y Nueva Zelanda es de los primeros del mundo."},
+        {"tipo": "cita", "texto": "Un festín visual para los ojos", "autor": "MeowSparky, streamer", "imagen": "Vice_City_10", "foco": 0.3,
+         "voz": "El streamer MeowSparky, que sí, tiene nombre de gato, ya lo ha probado: dice que es un festín visual."},
+        {"tipo": "lista", "titulo": "Truco Nueva Zelanda", "marca": "no", "items": ["Rockstar no lo confirma", "Microsoft tampoco", "Posible riesgo de baneo"],
+         "imagen": "Jason_Duval_07", "foco": 0.5,
+         "voz": "Y ojo con el truco de Nueva Zelanda: cambiar la región de la Xbox. No está confirmado por Rockstar ni por Microsoft, y te la juegas."},
+        {"tipo": "dato", "grande": "00:00", "texto": "En España: esta noche, a las doce", "imagen": "Vice_City_27", "foco": 0.5,
+         "voz": "En España, paciencia: se desbloquea esta noche, a las doce."},
+        {"tipo": "cierre", "texto": "¿Juegas a las 12?", "imagen": "Jason_and_Lucia_03", "foco": 0.4,
+         "voz": "¿Tú te quedas despierto para jugar a las doce? ¡Miau!"}
+      ]
+    },
+    {
+      "id": "05_cifras",
+      "gato": true,
+      "paleta": "atardecer",
+      "titulo_publicacion": "Las cifras LOCAS del lanzamiento de GTA 6 💰",
+      "descripcion": "GTA 6 en cifras: más de 15 millones de reservas y más de 1.500 millones de dólares (estimación de Sensor Tower), un 32 % más de peticiones de días libres para el 19 de noviembre (Remote) y 8 nominaciones a The Game Awards. Imágenes: Rockstar Games.",
+      "hashtags": "#gta6 #gtavi #rockstargames #gameawards #gaming #parati #fyp",
+      "escenas": [
+        {"tipo": "titular", "texto": "GTA 6 EN CIFRAS", "sub": "las locuras del lanzamiento", "imagen": "Vice_City_24", "foco": 0.45,
+         "voz": "Las cifras más locas del lanzamiento de GTA seis."},
+        {"tipo": "dato", "grande": "+15 M", "texto": "copias reservadas, según Sensor Tower", "imagen": "Vice_City_18", "foco": 0.5,
+         "voz": "Más de quince millones de copias reservadas antes de salir, según Sensor Tower."},
+        {"tipo": "dato", "grande": "+1.500 M$", "texto": "en reservas", "imagen": "Raul_Bautista_03", "foco": 0.55,
+         "voz": "Eso son más de mil quinientos millones de dólares. Sin haber salido."},
+        {"tipo": "dato", "grande": "+32 %", "texto": "peticiones de días libres para el 19 de noviembre", "imagen": "Cal_Hampton_03", "foco": 0.45,
+         "voz": "Y la empresa Remote dice que las peticiones de días libres para el diecinueve han subido un treinta y dos por ciento. Qué casualidad."},
+        {"tipo": "dato", "grande": "8", "texto": "nominaciones a The Game Awards", "imagen": "Jason_and_Lucia_14", "foco": 0.5,
+         "voz": "Además, tiene ocho nominaciones a los Game Awards, que se entregan el diez de diciembre."},
+        {"tipo": "cierre", "texto": "¿Te has cogido el día?", "imagen": "Jason_and_Lucia_18", "foco": 0.5,
+         "voz": "¿Y tú, te has cogido el día libre? ¡Miau!"}
+      ]
+    }
+  ]
+}
