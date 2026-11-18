@@ -52,3 +52,5 @@ scripts/youtube/assets/futbol/escudos/*.png
 
 # Audios y fotogramas temporales de shorts_animados.py
 scripts/youtube/shorts_tmp/
+# Capturas descargadas (kit de prensa oficial; se bajan solas al generar)
+scripts/youtube/assets/capturas/

@@ -1839,7 +1839,7 @@ def flow_shorts_animados():
         print(f"    - {v['id']}: {v.get('titulo_publicacion', '')}")
     solo = input("  Enter para hacerlos todos, o escribe el id de uno (p.ej. 01_hora): ").strip()
     args = [str(pack)] + (["--solo", solo] if solo else [])
-    print("\n  Generando (voz de ElevenLabs + animación + gato). Tarda unos minutos por vídeo...")
+    print("\n  Generando (voz del gato + animación + subtítulos). Tarda unos minutos por vídeo...")
     if not run_step("shorts_animados.py", *args):
         print("  Fallo generando los vídeos.")
         return
