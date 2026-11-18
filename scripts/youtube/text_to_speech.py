@@ -83,7 +83,8 @@ SECONDARY_ELEVENLABS_VOICE_ID = "DUnzBkwtjRWXPr6wRbmL"
 LIBRE_VOICE_ID = "kokoro-gato1"
 INTRO_CLIPS_DIR_BY_VOICE = {
     SECONDARY_ELEVENLABS_VOICE_ID: Path("./assets/gato_intros_voice2"),
-    LIBRE_VOICE_ID: Path("./assets/gato_intros_libre"),
+    # La voz libre usa los mismos "Miau" de siempre (los de ElevenLabs).
+    LIBRE_VOICE_ID: INTRO_CLIPS_DIR,
 }
 
 
