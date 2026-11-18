@@ -137,6 +137,26 @@ def get_elevenlabs_client():
     return ElevenLabs(api_key=api_key), voice_id
 
 
+# El Miau que sale casi siempre (el resto, de vez en cuando).
+MIAU_PRINCIPAL = "01_"
+PROB_MIAU_PRINCIPAL = 0.7
+
+
+def elegir_miau(intro_dir: Path) -> Path | None:
+    """Elige el Miau del principio: el que empieza por MIAU_PRINCIPAL el 70 %
+    de las veces y otro cualquiera de la carpeta el resto."""
+    import random
+
+    clips = sorted(intro_dir.glob("*.mp3")) if intro_dir.exists() else []
+    if not clips:
+        return None
+    principal = [c for c in clips if c.name.startswith(MIAU_PRINCIPAL)]
+    otros = [c for c in clips if c not in principal]
+    if principal and (not otros or random.random() < PROB_MIAU_PRINCIPAL):
+        return principal[0]
+    return random.choice(otros or clips)
+
+
 def prepend_intro_clip(narration_path: Path, voice_id: str | None = None) -> None:
     """Pega un 'Miau' elegido al azar delante de la narración generada,
     sustituyendo el archivo original por la versión combinada. Usa la
@@ -146,14 +166,13 @@ def prepend_intro_clip(narration_path: Path, voice_id: str | None = None) -> Non
     import random
 
     intro_dir = intro_clips_dir_for(voice_id)
-    available_clips = list(intro_dir.glob("*.mp3")) if intro_dir.exists() else []
+    chosen_clip = elegir_miau(intro_dir)
 
-    if not available_clips:
+    if chosen_clip is None:
         print(f"  [AVISO] No hay clips en {intro_dir}, se deja el audio sin 'Miau' inicial.")
         return
 
-    chosen_clip = random.choice(available_clips)
-    print(f"  Intro elegida al azar: {chosen_clip.name}")
+    print(f"  Intro elegida: {chosen_clip.name}")
 
     import subprocess
     import tempfile
