@@ -158,9 +158,9 @@ def montar_narracion(audios: list[Path], tmp: Path, con_miau: bool) -> tuple[Pat
 
     # El "Miau" de la voz que narra (voz libre o ElevenLabs), ver text_to_speech.
     intro_dir = text_to_speech.intro_clips_dir_for(None)
-    miaus = sorted(intro_dir.glob("*.mp3")) if con_miau and intro_dir.exists() else []
-    if miaus:
-        miau = leer_como_array(random.choice(miaus), tmp)
+    elegido = text_to_speech.elegir_miau(intro_dir) if con_miau else None
+    if elegido:
+        miau = leer_como_array(elegido, tmp)
         partes += [miau, silencio]
         t += (len(miau) + len(silencio)) / SAMPLE_RATE
 
