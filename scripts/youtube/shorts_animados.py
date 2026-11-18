@@ -680,7 +680,7 @@ def hacer_video(pack: dict, video: dict, carpeta_salida: Path, prueba: bool, reh
     carpeta_voz = tmp / ("voz_libre" if libre else "voz_prueba" if prueba else "voz")
     audios = fv.generar_voz(frases, carpeta_voz, prueba, rehacer, libre=libre)
     # El "Miau" sale de la carpeta de la voz que narra (ver text_to_speech.intro_clips_dir_for).
-    narracion, tramos = fv.montar_narracion(audios, tmp, con_miau=con_gato)
+    narracion, tramos = fv.montar_narracion(audios, tmp, con_miau=video.get("miau", True))
     duracion = tramos[-1][1] + fv.FINAL_EXTRA
     if duracion > fv.DURACION_MAXIMA:
         narracion, tramos, duracion = fv.acelerar(narracion, tramos, duracion, tmp)
